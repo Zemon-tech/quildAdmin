@@ -248,19 +248,27 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
     await adminApi.Problems.create(problemForm);
     onOpenChange(false);
   };
+  
   const handleDeleteProblem = async () => {
     if (!problem?._id) return;
-    if (!confirm(`Delete problem "${problem.title}"? This cannot be undone.`)) return;
-    await adminApi.Problems.delete(problem._id);
-    onOpenChange(false);
+    if (!confirm(`Are you sure you want to delete "${problem.title}"? This action cannot be undone.`)) return;
+    
+    try {
+      await adminApi.Problems.delete(problem._id);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error deleting problem:', error);
+      alert('Failed to delete problem. Please try again.');
+    }
   };
+  
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton={false} className="p-0 gap-0 h-[calc(100vh-3rem)] w-full max-w-[calc(100%-3rem)] sm:max-w-[calc(100%-3rem)] rounded-xl shadow-xl overflow-hidden">
         <div className="flex h-full min-h-0">
           {/* Sidebar */}
-          <aside className="w-64 border-r bg-muted/30 h-full p-4 space-y-2 overflow-y-auto">
+          <aside className="w-64 border-r bg-muted/30 h-full flex-shrink-0 p-4 space-y-2 overflow-y-auto">
             <button className="w-full text-left px-3 py-2 rounded hover:bg-muted mb-2" onClick={() => onOpenChange(false)}>
               <div className="flex items-center gap-2"><ChevronLeft className="h-4 w-4"/> <span>Back</span></div>
             </button>
@@ -277,7 +285,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
           </aside>
 
           {/* Main content */}
-          <main className="flex-1 h-full min-h-0 overflow-y-auto">
+          <main className="flex-1 h-full min-h-0 flex flex-col overflow-hidden">
             <div className="border-b p-4 flex items-center justify-between">
               <div>
                 <div className="text-xs text-muted-foreground">Account & settings like layout</div>
@@ -295,7 +303,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
 
             {/* Pods Section */}
             {section === 'pods' && (
-              <div className="p-6 space-y-4">
+              <div className="flex-1 p-6 space-y-4 overflow-y-auto">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
                     {podsLoading ? 'Loading pods...' : `${pods.length} pod(s)`}
@@ -360,7 +368,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
 
             {/* Stages Section */}
             {section === 'stages' && (
-              <div className="p-6 space-y-4">
+              <div className="flex-1 p-6 space-y-4 overflow-y-auto">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
                     {selectedPodId ? `Stages for selected pod` : 'Select a pod to view stages'}
@@ -437,7 +445,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
 
             {/* Analytics Section */}
             {section === 'analytics' && (
-              <div className="p-6 space-y-4">
+              <div className="flex-1 p-6 space-y-4 overflow-y-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Card>
                     <CardHeader>
@@ -467,7 +475,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
 
             {/* Edit Problem Section */}
             {section === 'edit' && (
-              <div className="p-6 space-y-4 max-w-5xl">
+              <div className="flex-1 p-6 space-y-4 max-w-5xl overflow-y-auto">
                 <div className="text-sm text-muted-foreground">Update the problem details.</div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -521,7 +529,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
 
             {/* Add Problem Section */}
             {section === 'add' && (
-              <div className="p-6 space-y-4 max-w-5xl">
+              <div className="flex-1 p-6 space-y-4 max-w-5xl overflow-y-auto">
                 <div className="text-sm text-muted-foreground">Create a new learning problem.</div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
