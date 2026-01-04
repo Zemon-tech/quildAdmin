@@ -24,6 +24,18 @@ class ApiClient {
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        // Rate limit error - wait and retry once
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const retryResponse = await fetch(`${API_BASE_URL}${path}`, {
+          method: 'GET',
+          headers,
+        });
+        if (!retryResponse.ok) {
+          throw new Error(`API Error: ${retryResponse.status} ${retryResponse.statusText}`);
+        }
+        return retryResponse.json();
+      }
       throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
 
