@@ -50,13 +50,23 @@
   --sidebar-ring: oklch(0.705 0.015 286.067);
 }
 
-/* Reset opinionated defaults that conflicted with Tailwind layout */
-html, body, #root {
-  height: 100%;
+/* Viewport Height Control & Overflow Management */
+html {
+  overflow: hidden;  /* Prevents page-level scrolling */
+  height: 100vh;
 }
+
 body {
+  overflow: auto;    /* Allows controlled scrolling */
+  height: 100vh;
+  position: relative;
   margin: 0;
   min-width: 320px;
+}
+
+/* Reset opinionated defaults that conflicted with Tailwind layout */
+#root {
+  height: 100%;
 }
 
 @theme inline {
@@ -140,5 +150,69 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Layout Utilities */
+@layer utilities {
+  /* Overscroll Behavior */
+  .overscroll-none {
+    overscroll-behavior: none;
+  }
+  
+  .overscroll-y-contain {
+    overscroll-behavior-y: contain;
+  }
+  
+  .overscroll-x-contain {
+    overscroll-behavior-x: contain;
+  }
+  
+  /* Viewport Height Utilities */
+  .viewport-full {
+    height: 100vh;
+  }
+  
+  .viewport-full-exact {
+    height: calc(100vh - 0px);
+  }
+  
+  /* Controlled Overflow */
+  .overflow-container {
+    overflow: hidden;
+  }
+  
+  .overflow-y-container {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
+  .overflow-x-container {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  
+  /* Flex Layout for Desktop App Experience */
+  .layout-flex-col {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .layout-flex-row {
+    display: flex;
+    flex-direction: row;
+  }
+  
+  .layout-flex-1 {
+    flex: 1;
+  }
+  
+  /* Component-specific overflow */
+  .card-overflow-hidden {
+    overflow: hidden;
+  }
+  
+  .message-overflow-hidden {
+    overflow: hidden;
   }
 }

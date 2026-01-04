@@ -155,7 +155,7 @@ export function Users() {
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-container">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -167,7 +167,7 @@ export function Users() {
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBody className="overflow-y-container">
                   {filteredUsers.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">

@@ -11,21 +11,23 @@ export function Layout({ children }: LayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-      />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Navbar />
-        <main
-          className={cn(
-            'flex-1 overflow-auto p-6',
-            sidebarCollapsed ? 'ml-0' : 'ml-0'
-          )}
-        >
-          {children}
-        </main>
+    <div className="layout-flex-col viewport-full-exact overflow-hidden bg-background overscroll-none">
+      <div className="layout-flex-row layout-flex-1 overflow-hidden">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
+        <div className="layout-flex-col layout-flex-1 overflow-hidden">
+          <Navbar />
+          <main
+            className={cn(
+              'layout-flex-1 overflow-y-container overscroll-y-contain p-6',
+              sidebarCollapsed ? 'ml-0' : 'ml-0'
+            )}
+          >
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );
