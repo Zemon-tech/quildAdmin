@@ -33,6 +33,7 @@ import { Search, Plus, Edit, Trash2, Eye, Clock, Layers } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import type { Problem, DifficultyLevel, PaginatedProblemsResponse } from '@/types/admin';
 import { format } from 'date-fns';
+import ProblemManageDialog from '@/components/ProblemManageDialog';
 
 export function Problems() {
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -54,6 +55,10 @@ export function Problems() {
     isPublic: false,
   });
 
+  // Manage dialog state
+  const [manageOpen, setManageOpen] = useState(false);
+  const [activeProblem, setActiveProblem] = useState<Problem | null>(null);
+
   useEffect(() => {
     loadProblems();
   }, []);
@@ -73,6 +78,11 @@ export function Problems() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openManage = (problem: Problem) => {
+    setActiveProblem(problem);
+    setManageOpen(true);
   };
 
   const filterProblems = () => {
@@ -253,12 +263,12 @@ export function Problems() {
                           <div>
                             <div className="font-medium">{problem.title}</div>
                             {problem.tagline && (
-                              <div className="text-sm text-muted-foreground">{problem.tagline}</div>
+                              <div className="text-sm text-muted-foreground">{problem.tagline.length > 60 ? problem.tagline.slice(0, 60) + '…' : problem.tagline}</div>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <code className="text-sm bg-muted px-2 py-1 rounded">{problem.slug}</code>
+                          <code className="text-sm bg-muted px-2 py-1 rounded">{problem.slug.length > 24 ? problem.slug.slice(0, 24) + '…' : problem.slug}</code>
                         </TableCell>
                         <TableCell>
                           <Badge className={getDifficultyColor(problem.difficulty)}>
@@ -289,7 +299,7 @@ export function Problems() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" onClick={() => openManage(problem)}>
                               <Eye className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleEdit(problem)}>
@@ -309,6 +319,8 @@ export function Problems() {
           )}
         </CardContent>
       </Card>
+
+      <ProblemManageDialog open={manageOpen} onOpenChange={setManageOpen} problem={activeProblem} />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
