@@ -4,8 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ShieldAlert, Loader2, Mail } from 'lucide-react';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useNavigate, useLocation } from 'react-router-dom';
+
+type AuthError = {
+  message: string;
+};
 
 export function Login() {
   const [loading, setLoading] = useState(false);
@@ -27,7 +32,7 @@ export function Login() {
       supabase.auth.verifyOtp({
         token_hash,
         type: (type as 'email' | 'recovery' | 'signup') || 'email',
-      }).then(({ error }) => {
+      }).then(({ error }: { error: AuthError | null }) => {
         if (error) {
           setAuthError(error.message);
         } else {
@@ -52,7 +57,7 @@ export function Login() {
     checkSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: Session | null) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session) {
           const from = location.state?.from?.pathname || '/';

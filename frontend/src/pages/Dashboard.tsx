@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, BookOpen, Layers, CheckCircle, TrendingUp, Clock } from 'lucide-react';
 import { adminApi } from '@/lib/api';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ChartLineInteractive, ChartBarLabel, ChartRadialSimple } from '@/components/charts';
 
 interface DashboardMetrics {
   totalUsers: number;
@@ -62,28 +62,6 @@ export function Dashboard() {
       setLoading(false);
     }
   };
-
-  const mockUserGrowth = [
-    { month: 'Jan', newUsers: 65, totalUsers: 65 },
-    { month: 'Feb', newUsers: 78, totalUsers: 143 },
-    { month: 'Mar', newUsers: 90, totalUsers: 233 },
-    { month: 'Apr', newUsers: 81, totalUsers: 314 },
-    { month: 'May', newUsers: 95, totalUsers: 409 },
-    { month: 'Jun', newUsers: 110, totalUsers: 519 },
-  ];
-
-  const mockDifficultyDistribution = [
-    { name: 'Beginner', value: 35, color: '#10b981' },
-    { name: 'Intermediate', value: 45, color: '#3b82f6' },
-    { name: 'Advanced', value: 20, color: '#8b5cf6' },
-  ];
-
-  const mockPhaseDistribution = [
-    { phase: 'Research', count: 45 },
-    { phase: 'Design', count: 38 },
-    { phase: 'Implementation', count: 52 },
-    { phase: 'Reflection', count: 35 },
-  ];
 
   const metricCards = [
     {
@@ -183,51 +161,9 @@ export function Dashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>User Growth</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={mockUserGrowth}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="totalUsers" stroke="#3b82f6" strokeWidth={2} />
-                <Line type="monotone" dataKey="newUsers" stroke="#10b981" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <ChartLineInteractive />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Difficulty Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={mockDifficultyDistribution}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {mockDifficultyDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <ChartRadialSimple />
       </div>
 
       <Card>
@@ -235,15 +171,7 @@ export function Dashboard() {
           <CardTitle>Pod Phase Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={mockPhaseDistribution}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="phase" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="count" fill="#3b82f6" />
-            </BarChart>
-          </ResponsiveContainer>
+          <ChartBarLabel />
         </CardContent>
       </Card>
     </div>

@@ -8,10 +8,13 @@ import {
   BarChart3, 
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
@@ -30,6 +33,7 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <div
@@ -79,6 +83,22 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </nav>
 
       <div className="border-t p-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleTheme}
+          className={cn(
+            'w-full mb-2',
+            collapsed ? 'px-2' : 'justify-start gap-2'
+          )}
+        >
+          {theme === 'dark' ? (
+            <Sun className="h-4 w-4 shrink-0" />
+          ) : (
+            <Moon className="h-4 w-4 shrink-0" />
+          )}
+          {!collapsed && <span>Toggle Theme</span>}
+        </Button>
         {!collapsed && (
           <p className="text-xs text-muted-foreground">
             © 2025 Quild Admin
