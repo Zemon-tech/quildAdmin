@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Edit, Trash2, Plus, Clock, ListTodo, LineChart, Layers, Settings, ChevronLeft, Eye, Play, CheckCircle, BookOpen, FileText, Maximize2, Minimize2 } from 'lucide-react';
@@ -15,6 +14,78 @@ import { ChartAreaInteractive, ChartBarLabel, ChartLineInteractive, ChartRadarLi
 import { adminApi } from '@/lib/api';
 import type { Problem, Pod, PodPhase, PodStage, StageType, MCQQuestion, PracticeProblem, PaginatedPodsResponse, DifficultyLevel } from '@/types/admin';
 
+// simple HTML <-> Markdown helpers
+const markdownToHtml = (md: string): string => {
+  if (!md) return ''
+  let html = md
+  html = html.replace(/^######\s?(.*)$/gm, '<h6>$1</h6>')
+  html = html.replace(/^#####\s?(.*)$/gm, '<h5>$1</h5>')
+  html = html.replace(/^####\s?(.*)$/gm, '<h4>$1</h4>')
+  html = html.replace(/^###\s?(.*)$/gm, '<h3>$1</h3>')
+  html = html.replace(/^##\s?(.*)$/gm, '<h2>$1</h2>')
+  html = html.replace(/^#\s?(.*)$/gm, '<h1>$1</h1>')
+  html = html.replace(/^>\s?(.*)$/gm, '<blockquote>$1</blockquote>')
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+  html = html.replace(/__(.*?)__/g, '<strong>$1</strong>')
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>')
+  html = html.replace(/_(.*?)_/g, '<em>$1</em>')
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
+  html = html.replace(/!\[([^\]]*)\]\(([^\)]+)\)/g, '<img alt="$1" src="$2" />')
+  html = html.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+  html = html.replace(/^\s*[-*+]\s+(.*)$/gm, '<li>$1</li>')
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`)
+  html = html.replace(/^\s*\d+\.\s+(.*)$/gm, '<li>$1</li>')
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, (m) => (m.includes('<ul>') ? m : `<ol>${m}</ol>`))
+  html = html.replace(/^(?!<h\d|<ul>|<ol>|<li>|<blockquote>|<img|<p>|<pre>|<code>)(.+)$/gm, '<p>$1</p>')
+  return html
+}
+
+const htmlToMarkdown = (html: string): string => {
+  if (!html) return ''
+  let md = html
+  md = md.replace(/\n/g, '')
+  md = md.replace(/<h1>(.*?)<\/h1>/gi, '# $1\n')
+  md = md.replace(/<h2>(.*?)<\/h2>/gi, '## $1\n')
+  md = md.replace(/<h3>(.*?)<\/h3>/gi, '### $1\n')
+  md = md.replace(/<h4>(.*?)<\/h4>/gi, '#### $1\n')
+  md = md.replace(/<h5>(.*?)<\/h5>/gi, '##### $1\n')
+  md = md.replace(/<h6>(.*?)<\/h6>/gi, '###### $1\n')
+  md = md.replace(/<strong>(.*?)<\/strong>/gi, '**$1**')
+  md = md.replace(/<b>(.*?)<\/b>/gi, '**$1**')
+  md = md.replace(/<em>(.*?)<\/em>/gi, '*$1*')
+  md = md.replace(/<i>(.*?)<\/i>/gi, '*$1*')
+  md = md.replace(/<code>(.*?)<\/code>/gi, '`$1`')
+  md = md.replace(/<blockquote>(.*?)<\/blockquote>/gi, '> $1\n')
+  md = md.replace(/<ul>(.*?)<\/ul>/gi, (_m: string, p1: string) => p1.replace(/<li>(.*?)<\/li>/gi, '- $1\n'))
+  md = md.replace(/<ol>(.*?)<\/ol>/gi, (_m: string, p1: string) => p1.replace(/<li>(.*?)<\/li>/gi, (_mm: string, li: string, index: number) => `${index + 1}. ${li}\n`))
+  md = md.replace(/<a[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi, '[$2]($1)')
+  md = md.replace(/<img[^>]*src=["']([^"']+)["'][^>]*alt=["']?([^"']*)["']?[^>]*\/>/gi, '![$2]($1)')
+  md = md.replace(/<p>(.*?)<\/p>/gi, '$1\n')
+  md = md.replace(/<br\s*\/?>/gi, '\n')
+  return md.trim()
+}
+
+interface MarkdownEditorProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}
+
+function MarkdownEditor({ value, onChange }: MarkdownEditorProps) {
+  return (
+    <div className="border rounded-md overflow-hidden">
+      <SimpleEditor
+        initialContent={markdownToHtml(value)}
+        onUpdate={(html) => {
+          // Convert HTML back to markdown using the helper function
+          const md = htmlToMarkdown(html);
+          onChange(md);
+        }}
+      />
+    </div>
+  );
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -22,56 +93,6 @@ interface Props {
 }
 
 export default function ProblemManageDialog({ open, onOpenChange, problem }: Props) {
-  // simple HTML <-> Markdown helpers
-  const markdownToHtml = (md: string): string => {
-    if (!md) return ''
-    let html = md
-    html = html.replace(/^######\s?(.*)$/gm, '<h6>$1</h6>')
-    html = html.replace(/^#####\s?(.*)$/gm, '<h5>$1</h5>')
-    html = html.replace(/^####\s?(.*)$/gm, '<h4>$1</h4>')
-    html = html.replace(/^###\s?(.*)$/gm, '<h3>$1</h3>')
-    html = html.replace(/^##\s?(.*)$/gm, '<h2>$1</h2>')
-    html = html.replace(/^#\s?(.*)$/gm, '<h1>$1</h1>')
-    html = html.replace(/^>\s?(.*)$/gm, '<blockquote>$1</blockquote>')
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    html = html.replace(/__(.*?)__/g, '<strong>$1</strong>')
-    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>')
-    html = html.replace(/_(.*?)_/g, '<em>$1</em>')
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
-    html = html.replace(/!\[([^\]]*)\]\(([^\)]+)\)/g, '<img alt="$1" src="$2" />')
-    html = html.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-    html = html.replace(/^\s*[-*+]\s+(.*)$/gm, '<li>$1</li>')
-    html = html.replace(/(<li>.*<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`) 
-    html = html.replace(/^\s*\d+\.\s+(.*)$/gm, '<li>$1</li>')
-    html = html.replace(/(<li>.*<\/li>\n?)+/g, (m) => (m.includes('<ul>') ? m : `<ol>${m}</ol>`))
-    html = html.replace(/^(?!<h\d|<ul>|<ol>|<li>|<blockquote>|<img|<p>|<pre>|<code>)(.+)$/gm, '<p>$1</p>')
-    return html
-  }
-
-  const htmlToMarkdown = (html: string): string => {
-    if (!html) return ''
-    let md = html
-    md = md.replace(/\n/g, '')
-    md = md.replace(/<h1>(.*?)<\/h1>/gi, '# $1\n')
-    md = md.replace(/<h2>(.*?)<\/h2>/gi, '## $1\n')
-    md = md.replace(/<h3>(.*?)<\/h3>/gi, '### $1\n')
-    md = md.replace(/<h4>(.*?)<\/h4>/gi, '#### $1\n')
-    md = md.replace(/<h5>(.*?)<\/h5>/gi, '##### $1\n')
-    md = md.replace(/<h6>(.*?)<\/h6>/gi, '###### $1\n')
-    md = md.replace(/<strong>(.*?)<\/strong>/gi, '**$1**')
-    md = md.replace(/<b>(.*?)<\/b>/gi, '**$1**')
-    md = md.replace(/<em>(.*?)<\/em>/gi, '*$1*')
-    md = md.replace(/<i>(.*?)<\/i>/gi, '*$1*')
-    md = md.replace(/<code>(.*?)<\/code>/gi, '`$1`')
-    md = md.replace(/<blockquote>(.*?)<\/blockquote>/gi, '> $1\n')
-    md = md.replace(/<ul>(.*?)<\/ul>/gi, (_m: string, p1: string) => p1.replace(/<li>(.*?)<\/li>/gi, '- $1\n'))
-    md = md.replace(/<ol>(.*?)<\/ol>/gi, (_m: string, p1: string) => p1.replace(/<li>(.*?)<\/li>/gi, (_mm: string, li: string, index: number) => `${index + 1}. ${li}\n`))
-    md = md.replace(/<a[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi, '[$2]($1)')
-    md = md.replace(/<img[^>]*src=["']([^"']+)["'][^>]*alt=["']?([^"']*)["']?[^>]*\/>/gi, '![$2]($1)')
-    md = md.replace(/<p>(.*?)<\/p>/gi, '$1\n')
-    md = md.replace(/<br\s*\/?>/gi, '\n')
-    return md.trim()
-  }
   const [pods, setPods] = useState<Pod[]>([]);
   const [podsLoading, setPodsLoading] = useState(false);
   const [selectedPodId, setSelectedPodId] = useState('');
@@ -399,9 +420,6 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
             </button>
             <button className={`w-full text-left px-3 py-2 rounded hover:bg-muted ${section==='stages'?'bg-muted':''}`} onClick={() => setSection('stages')}>
               <div className="flex items-center gap-2"><ListTodo className="h-4 w-4"/> <span>Stages</span></div>
-            </button>
-            <button className={`w-full text-left px-3 py-2 rounded hover:bg-muted ${section==='viewContent'?'bg-muted':''}`} onClick={() => setSection('viewContent')} disabled={!viewingStage}>
-              <div className="flex items-center gap-2"><Eye className="h-4 w-4"/> <span>View Content</span></div>
             </button>
             <button className={`w-full text-left px-3 py-2 rounded hover:bg-muted ${section==='analytics'?'bg-muted':''}`} onClick={() => setSection('analytics')}>
               <div className="flex items-center gap-2"><LineChart className="h-4 w-4"/> <span>Analytics</span></div>
@@ -969,11 +987,11 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                 </div>
                 <div>
                   <Label htmlFor="description">Description (Markdown)</Label>
-                  <Textarea id="description" value={problemForm.description_md} onChange={(e) => setProblemForm({ ...problemForm, description_md: e.target.value })} rows={4} />
+                  <MarkdownEditor value={problemForm.description_md} onChange={(value) => setProblemForm({ ...problemForm, description_md: value })} />
                 </div>
                 <div>
                   <Label htmlFor="context">Context (Markdown)</Label>
-                  <Textarea id="context" value={problemForm.context_md} onChange={(e) => setProblemForm({ ...problemForm, context_md: e.target.value })} rows={4} />
+                  <MarkdownEditor value={problemForm.context_md} onChange={(value) => setProblemForm({ ...problemForm, context_md: value })} />
                 </div>
               </div>
             )}
@@ -1022,7 +1040,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                 </div>
                 <div>
                   <Label htmlFor="edit_pod_desc">Description (Markdown)</Label>
-                  <Textarea id="edit_pod_desc" value={podForm.description_md} onChange={(e) => setPodForm({ ...podForm, description_md: e.target.value })} rows={4} />
+                  <MarkdownEditor value={podForm.description_md} onChange={(value) => setPodForm({ ...podForm, description_md: value })} />
                 </div>
                               </div>
             )}
@@ -1198,11 +1216,11 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                 </div>
                 <div>
                   <Label htmlFor="add_description">Description (Markdown)</Label>
-                  <Textarea id="add_description" value={problemForm.description_md} onChange={(e) => setProblemForm({ ...problemForm, description_md: e.target.value })} rows={4} />
+                  <MarkdownEditor value={problemForm.description_md} onChange={(value) => setProblemForm({ ...problemForm, description_md: value })} />
                 </div>
                 <div>
                   <Label htmlFor="add_context">Context (Markdown)</Label>
-                  <Textarea id="add_context" value={problemForm.context_md} onChange={(e) => setProblemForm({ ...problemForm, context_md: e.target.value })} rows={4} />
+                  <MarkdownEditor value={problemForm.context_md} onChange={(value) => setProblemForm({ ...problemForm, context_md: value })} />
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -1266,7 +1284,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
               </div>
               <div>
                 <Label htmlFor="pod_desc">Description (Markdown)</Label>
-                <Textarea id="pod_desc" value={podForm.description_md} onChange={(e) => setPodForm({ ...podForm, description_md: e.target.value })} rows={4} />
+                <MarkdownEditor value={podForm.description_md} onChange={(value) => setPodForm({ ...podForm, description_md: value })} />
               </div>
             </div>
             <DialogFooter>
@@ -1329,11 +1347,11 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
               <div className="space-y-4 py-4">
                 <div>
                   <Label htmlFor="stage_intro">Introduction</Label>
-                  <Textarea id="stage_intro" value={stageForm.content.introduction} onChange={(e) => setStageForm({ ...stageForm, content: { ...stageForm.content, introduction: e.target.value } })} rows={3} />
+                  <MarkdownEditor value={stageForm.content.introduction} onChange={(value) => setStageForm({ ...stageForm, content: { ...stageForm.content, introduction: value } })} />
                 </div>
                 <div>
                   <Label htmlFor="stage_content_md">Content (Markdown)</Label>
-                  <Textarea id="stage_content_md" value={stageForm.content.content_md} onChange={(e) => setStageForm({ ...stageForm, content: { ...stageForm.content, content_md: e.target.value } })} rows={8} />
+                  <MarkdownEditor value={stageForm.content.content_md} onChange={(value) => setStageForm({ ...stageForm, content: { ...stageForm.content, content_md: value } })} />
                 </div>
               </div>
               <div className="space-y-4 py-4">

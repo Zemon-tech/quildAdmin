@@ -29,7 +29,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Search, Plus, Edit, Trash2, Eye, Clock, Layers } from 'lucide-react';
+import { Search, Plus, Clock, Layers } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import type { Problem, DifficultyLevel, PaginatedProblemsResponse } from '@/types/admin';
 import { format } from 'date-fns';
@@ -43,7 +43,6 @@ export function Problems() {
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
   const [visibilityFilter, setVisibilityFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingProblem, setEditingProblem] = useState<Problem | null>(null);
   const [formData, setFormData] = useState({
     slug: '',
     title: '',
@@ -112,7 +111,6 @@ export function Problems() {
   };
 
   const handleCreate = () => {
-    setEditingProblem(null);
     setFormData({
       slug: '',
       title: '',
@@ -126,39 +124,9 @@ export function Problems() {
     setDialogOpen(true);
   };
 
-  const handleEdit = (problem: Problem) => {
-    setEditingProblem(problem);
-    setFormData({
-      slug: problem.slug,
-      title: problem.title,
-      description_md: problem.description_md || '',
-      tagline: problem.tagline || '',
-      context_md: problem.context_md || '',
-      difficulty: problem.difficulty,
-      estimatedHours: problem.estimatedHours,
-      isPublic: problem.isPublic,
-    });
-    setDialogOpen(true);
-  };
-
-  const handleDelete = async (problem: Problem) => {
-    if (!confirm(`Are you sure you want to delete "${problem.title}"?`)) return;
-
-    try {
-      await adminApi.Problems.delete(problem._id!);
-      await loadProblems();
-    } catch (error) {
-      console.error('Error deleting problem:', error);
-    }
-  };
-
   const handleSubmit = async () => {
     try {
-      if (editingProblem) {
-        await adminApi.Problems.update(editingProblem._id!, formData);
-      } else {
-        await adminApi.Problems.create(formData);
-      }
+      await adminApi.Problems.create(formData);
       await loadProblems();
       setDialogOpen(false);
     } catch (error) {
@@ -246,19 +214,22 @@ export function Problems() {
                     <TableHead>Duration</TableHead>
                     <TableHead>Visibility</TableHead>
                     <TableHead>Updated</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredProblems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         No problems found
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredProblems.map((problem) => (
-                      <TableRow key={problem._id}>
+                      <TableRow 
+                        key={problem._id} 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => openManage(problem)}
+                      >
                         <TableCell>
                           <div>
                             <div className="font-medium">{problem.title}</div>
@@ -297,19 +268,6 @@ export function Problems() {
                             {format(new Date(problem.updatedAt), 'MMM d, yyyy')}
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => openManage(problem)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleEdit(problem)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleDelete(problem)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -325,9 +283,9 @@ export function Problems() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingProblem ? 'Edit Problem' : 'Create New Problem'}</DialogTitle>
+            <DialogTitle>Create New Problem</DialogTitle>
             <DialogDescription>
-              {editingProblem ? 'Update the problem details.' : 'Create a new learning problem.'}
+              Create a new learning problem.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -339,7 +297,6 @@ export function Problems() {
                   value={formData.slug}
                   onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                   placeholder="problem-slug"
-                  disabled={!!editingProblem}
                 />
               </div>
               <div>
@@ -421,7 +378,7 @@ export function Problems() {
               Cancel
             </Button>
             <Button onClick={handleSubmit}>
-              {editingProblem ? 'Update' : 'Create'} Problem
+              Create Problem
             </Button>
           </DialogFooter>
         </DialogContent>
