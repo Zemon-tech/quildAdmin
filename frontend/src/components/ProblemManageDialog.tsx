@@ -1068,20 +1068,15 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                 ) : (
                   // Standard Mode - Show all fields
                   <>
-                    <div className="text-sm text-muted-foreground">{editingStage ? 'Update the stage details.' : 'Create a new learning stage.'}</div>
-                    <div>
-                      <Label htmlFor="edit_stage_title">Title *</Label>
-                      <Input id="edit_stage_title" value={stageForm.title} onChange={(e) => setStageForm({ ...stageForm, title: e.target.value })} placeholder="Stage title" />
-                    </div>
-                    <div>
-                      <Label htmlFor="edit_stage_description">Description *</Label>
-                      <Textarea id="edit_stage_description" value={stageForm.description} onChange={(e) => setStageForm({ ...stageForm, description: e.target.value })} rows={3} />
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Label htmlFor="edit_stage_type">Type *</Label>
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label htmlFor="edit_stage_title" className="text-xs">Title</Label>
+                        <Input id="edit_stage_title" value={stageForm.title} onChange={(e) => setStageForm({ ...stageForm, title: e.target.value })} placeholder="Stage title" className="h-9" />
+                      </div>
+                      <div className="col-span-3">
+                        <Label htmlFor="edit_stage_type" className="text-xs">Type</Label>
                         <Select value={stageForm.type} onValueChange={(v: StageType) => setStageForm({ ...stageForm, type: v })}>
-                          <SelectTrigger id="edit_stage_type"><SelectValue /></SelectTrigger>
+                          <SelectTrigger id="edit_stage_type" className="h-9"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="introduction">Introduction</SelectItem>
                             <SelectItem value="case_studies">Case Studies</SelectItem>
@@ -1092,38 +1087,55 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                           </SelectContent>
                         </Select>
                       </div>
-                      <div>
-                        <Label htmlFor="edit_stage_order">Order *</Label>
-                        <Input id="edit_stage_order" type="number" min="0" value={stageForm.order} onChange={(e) => setStageForm({ ...stageForm, order: parseInt(e.target.value) || 0 })} />
+                      <div className="col-span-1">
+                        <Label htmlFor="edit_stage_order" className="text-xs">Order</Label>
+                        <Input id="edit_stage_order" type="number" min="0" value={stageForm.order} onChange={(e) => setStageForm({ ...stageForm, order: parseInt(e.target.value) || 0 })} className="h-9" />
                       </div>
-                      <div>
-                        <Label htmlFor="edit_stage_minutes">Duration (min) *</Label>
-                        <Input id="edit_stage_minutes" type="number" min="1" value={stageForm.estimatedMinutes} onChange={(e) => setStageForm({ ...stageForm, estimatedMinutes: parseInt(e.target.value) || 30 })} />
+                      <div className="col-span-2">
+                        <Label htmlFor="edit_stage_minutes" className="text-xs">Duration</Label>
+                        <Input id="edit_stage_minutes" type="number" min="1" value={stageForm.estimatedMinutes} onChange={(e) => setStageForm({ ...stageForm, estimatedMinutes: parseInt(e.target.value) || 30 })} className="h-9" />
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="edit_stage_required" checked={stageForm.isRequired} onCheckedChange={(c) => setStageForm({ ...stageForm, isRequired: c })} />
-                      <Label htmlFor="edit_stage_required">Required stage</Label>
+                      <div className="col-span-2 flex items-center gap-2 pt-5">
+                        <Switch id="edit_stage_required" checked={stageForm.isRequired} onCheckedChange={(c) => setStageForm({ ...stageForm, isRequired: c })} />
+                        <Label htmlFor="edit_stage_required" className="text-xs">Required</Label>
+                      </div>
                     </div>
                     <div>
-                      <Label htmlFor="edit_stage_intro">Introduction</Label>
-                      <Textarea id="edit_stage_intro" value={stageForm.content.introduction} onChange={(e) => setStageForm({ ...stageForm, content: { ...stageForm.content, introduction: e.target.value } })} rows={3} />
+                      <Label htmlFor="edit_stage_description" className="text-xs">Description</Label>
+                      <div className="border rounded-md mt-1">
+                        <div className="simple-editor-wrapper compact">
+                          <SimpleEditor
+                            initialContent={markdownToHtml(stageForm.description)}
+                            onUpdate={(html) => setStageForm({ ...stageForm, description: htmlToMarkdown(html) })}
+                          />
+                        </div>
+                      </div>
                     </div>
                     <div>
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="edit_stage_content_md">Content</Label>
+                      <Label htmlFor="edit_stage_intro" className="text-xs">Introduction</Label>
+                      <div className="border rounded-md mt-1">
+                        <div className="simple-editor-wrapper compact">
+                          <SimpleEditor
+                            initialContent={markdownToHtml(stageForm.content.introduction)}
+                            onUpdate={(html) => setStageForm({ ...stageForm, content: { ...stageForm.content, introduction: htmlToMarkdown(html) } })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <Label htmlFor="edit_stage_content_md" className="text-xs">Content</Label>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => setIsFocusMode(!isFocusMode)}
-                          className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                          className="h-7 px-2 text-muted-foreground hover:text-foreground"
                         >
-                          <Maximize2 className="h-4 w-4" />
-                          <span className="text-xs">Expand</span>
+                          <Maximize2 className="h-3 w-3" />
                         </Button>
                       </div>
-                      <div className="mt-2 border rounded-md">
+                      <div className="border rounded-md">
                         <div className="simple-editor-wrapper compact">
                           <SimpleEditor
                             initialContent={markdownToHtml(stageForm.content.content_md)}

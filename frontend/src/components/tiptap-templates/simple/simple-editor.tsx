@@ -5,7 +5,6 @@ import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
 
 // --- Tiptap Core Extensions ---
 import { StarterKit } from "@tiptap/starter-kit"
-import { Image } from "@tiptap/extension-image"
 import { TaskItem, TaskList } from "@tiptap/extension-list"
 import { TextAlign } from "@tiptap/extension-text-align"
 import { Typography } from "@tiptap/extension-typography"
@@ -29,6 +28,7 @@ import {
 // --- Tiptap Node ---
 import { ImageUploadNode } from "@/components/tiptap-node/image-upload-node/image-upload-node-extension"
 import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension"
+import { EnhancedImage } from "@/components/tiptap-node/enhanced-image-node/enhanced-image-node-extension"
 import "@/components/tiptap-node/blockquote-node/blockquote-node.scss"
 import "@/components/tiptap-node/code-block-node/code-block-node.scss"
 import "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node.scss"
@@ -36,10 +36,12 @@ import "@/components/tiptap-node/list-node/list-node.scss"
 import "@/components/tiptap-node/image-node/image-node.scss"
 import "@/components/tiptap-node/heading-node/heading-node.scss"
 import "@/components/tiptap-node/paragraph-node/paragraph-node.scss"
+import "@/components/tiptap-node/enhanced-image-node/enhanced-image-node.scss"
 
 // --- Tiptap UI ---
 import { HeadingDropdownMenu } from "@/components/tiptap-ui/heading-dropdown-menu"
 import { ImageUploadButton } from "@/components/tiptap-ui/image-upload-button"
+import { ImageAlignButton } from "@/components/tiptap-ui/image-align-button"
 import { ListDropdownMenu } from "@/components/tiptap-ui/list-dropdown-menu"
 import { BlockquoteButton } from "@/components/tiptap-ui/blockquote-button"
 import { CodeBlockButton } from "@/components/tiptap-ui/code-block-button"
@@ -140,10 +142,12 @@ const MainToolbarContent = ({
   onHighlighterClick,
   onLinkClick,
   isMobile,
+  editor,
 }: {
   onHighlighterClick: () => void
   onLinkClick: () => void
   isMobile: boolean
+  editor: any
 }) => {
   return (
     <>
@@ -202,6 +206,9 @@ const MainToolbarContent = ({
 
       <ToolbarGroup>
         <ImageUploadButton text="Add" />
+        <ImageAlignButton editor={editor} align="left" />
+        <ImageAlignButton editor={editor} align="center" />
+        <ImageAlignButton editor={editor} align="right" />
       </ToolbarGroup>
 
       <Spacer />
@@ -298,7 +305,7 @@ export function SimpleEditor({ initialContent, onUpdate }: SimpleEditorProps) {
       TaskList,
       TaskItem.configure({ nested: true }),
       Highlight.configure({ multicolor: true }),
-      Image,
+      EnhancedImage,
       Typography,
       Superscript,
       Subscript,
@@ -347,7 +354,19 @@ export function SimpleEditor({ initialContent, onUpdate }: SimpleEditorProps) {
           editor?.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
         }
       },
-      { label: "Image", action: () => {
+      { label: "Image Upload", action: () => {
+          // Trigger image upload by inserting an upload node
+          editor?.chain().focus().insertContent({
+            type: 'imageUpload',
+            attrs: {
+              accept: "image/*",
+              maxSize: MAX_FILE_SIZE,
+              limit: 3,
+            }
+          }).run()
+        }
+      },
+      { label: "Image URL", action: () => {
           const url = window.prompt("Enter image URL")
           if (!url) return
           editor?.chain().focus().setImage({ src: url }).run()
@@ -433,7 +452,9 @@ export function SimpleEditor({ initialContent, onUpdate }: SimpleEditorProps) {
       <EditorContext.Provider value={{ editor }}>
         <Toolbar
           ref={toolbarRef}
+          variant="floating"
           style={{
+            borderRadius: 0,
             ...(isMobile
               ? {
                   bottom: `calc(100% - ${height - rect.y}px)`,
@@ -446,6 +467,7 @@ export function SimpleEditor({ initialContent, onUpdate }: SimpleEditorProps) {
               onHighlighterClick={() => setMobileView("highlighter")}
               onLinkClick={() => setMobileView("link")}
               isMobile={isMobile}
+              editor={editor}
             />
           ) : (
             <MobileToolbarContent
