@@ -108,6 +108,7 @@ export const adminApi = {
   Problems: {
     list: () => apiClient.get<any>('/api/admin/problems'),
     get: (slug: string) => apiClient.get<any>(`/api/problems/${slug}`),
+    getDetails: (slug: string) => apiClient.get<any>(`/api/problems/${slug}`),
     create: (data: any) => apiClient.post('/api/admin/problems', data),
     update: (id: string, data: any) => apiClient.put(`/api/admin/problems/${id}`, data),
     delete: (id: string) => apiClient.delete(`/api/admin/problems/${id}`),
@@ -115,6 +116,8 @@ export const adminApi = {
   Pods: {
     list: () => apiClient.get<any>('/api/admin/pods'),
     getProgress: (problemId: string) => apiClient.get<any>(`/api/pods/progress/${problemId}`),
+    getStages: (podId: string) => apiClient.get<any>(`/api/pods/${podId}/stages`),
+    getContent: (podId: string) => apiClient.get<any>(`/api/content/pods/${podId}/content`),
     create: (data: any) => apiClient.post('/api/admin/pods', data),
     update: (id: string, data: any) => apiClient.put(`/api/admin/pods/${id}`, data),
     delete: (id: string) => apiClient.delete(`/api/admin/pods/${id}`),
@@ -122,6 +125,12 @@ export const adminApi = {
   Stages: {
     list: (podId?: string) => apiClient.get<any>(podId ? `/api/admin/stages?podId=${podId}` : '/api/admin/stages'),
     get: (podId: string, stageId: string) => apiClient.get<any>(`/api/pods/${podId}/stages/${stageId}`),
+    getContent: (podId: string, stageId: string) => apiClient.get<any>(`/api/content/pods/${podId}/stages/${stageId}/content`),
+    start: (podId: string, stageId: string) => apiClient.post<any>(`/api/pods/${podId}/stages/${stageId}/start`, {}),
+    complete: (podId: string, stageId: string, data: any) => apiClient.post<any>(`/api/pods/${podId}/stages/${stageId}/complete`, data),
+    updateProgress: (podId: string, stageId: string, data: any) => apiClient.patch<any>(`/api/pods/${podId}/stages/${stageId}/progress`, data),
+    submitPractice: (podId: string, stageId: string, data: any) => apiClient.post<any>(`/api/pods/${podId}/stages/${stageId}/practice/submit`, data),
+    submitAssessment: (podId: string, stageId: string, data: any) => apiClient.post<any>(`/api/pods/${podId}/stages/${stageId}/assessment/submit`, data),
     create: (data: any) => apiClient.post('/api/admin/stages', data),
     update: (id: string, data: any) => apiClient.put(`/api/admin/stages/${id}`, data),
     delete: (id: string) => apiClient.delete(`/api/admin/stages/${id}`),
