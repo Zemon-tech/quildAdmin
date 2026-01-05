@@ -15,6 +15,7 @@ import { Superscript } from "@tiptap/extension-superscript"
 import { Selection } from "@tiptap/extensions"
 import { Plugin } from "@tiptap/pm/state"
 import { Extension } from "@tiptap/core"
+import { Markdown } from "@tiptap/markdown"
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button"
@@ -77,9 +78,14 @@ import "@/components/tiptap-templates/simple/simple-editor.scss"
 
 import content from "@/components/tiptap-templates/simple/data/content.json"
 
-// Paste markdown detection extension
+// Paste markdown detection extension using Tiptap Markdown
+let editorInstance: any = null
+
 const PasteMarkdown = Extension.create({
   name: 'pasteMarkdown',
+  onCreate({ editor }) {
+    editorInstance = editor
+  },
   addProseMirrorPlugins() {
     return [
       new Plugin({
@@ -89,33 +95,25 @@ const PasteMarkdown = Extension.create({
             if (!text) {
               return false
             }
-            
+
+            console.log('Paste detected, text:', text.substring(0, 100))
+            console.log('Editor instance:', editorInstance)
+
             // Check if text looks like Markdown
             if (looksLikeMarkdown(text)) {
-              // Parse the markdown text to HTML
-              const html = parseMarkdownToHTML(text)
-              
-              // Create a temporary div to parse HTML
-              const div = document.createElement('div')
-              div.innerHTML = html
-              
-              // Get the HTML content as string
-              const content = div.innerHTML || html
-              
-              // Create a text node with the HTML content
-              const { state, dispatch } = view
-              const textNode = state.schema.text(content)
-              
-              // Insert the text node at the current selection
-              const tr = state.tr.replaceSelectionWith(textNode)
-              
-              if (dispatch) {
-                dispatch(tr)
+              // Get the editor instance from closure
+              const editor = editorInstance
+              if (!editor) {
+                console.error('Editor instance not available')
+                return false
               }
-              
+
+              console.log('Inserting markdown content')
+              // Insert the Markdown content directly with contentType option
+              editor.commands.insertContent(text, { contentType: 'markdown' })
               return true
             }
-            
+
             return false
           },
         },
@@ -130,73 +128,12 @@ function looksLikeMarkdown(text: string): boolean {
     /^#{1,6}\s/.test(text) || // Headings
     /\*\*[^*]+\*\*/.test(text) || // Bold
     /\*[^*]+\*/.test(text) || // Italic
-    /\[.+]\(.+\)/.test(text) || // Links
+    /\[.+\]\(.+\)/.test(text) || // Links
     /^[-*+]\s/.test(text) || // Lists
     /^\d+\.\s/.test(text) || // Numbered lists
     /`[^`]+`/.test(text) || // Inline code
     /^```/.test(text) // Code blocks
   )
-}
-
-// Simple markdown to HTML parser for common patterns
-function parseMarkdownToHTML(text: string): string {
-  let html = text
-  
-  // Code blocks (process first to avoid conflicts with inline code)
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-  
-  // Headers
-  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>')
-  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>')
-  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>')
-  
-  // Bold
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-  
-  // Italic
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>')
-  
-  // Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-  
-  // Inline code (process after code blocks to avoid conflicts)
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
-  
-  // Horizontal rules
-  html = html.replace(/^---+$/gm, '<hr>')
-  html = html.replace(/^\*\*\*+$/gm, '<hr>')
-  
-  // Unordered lists
-  html = html.replace(/^[\s]*[-*+]\s+(.*)$/gm, '<li>$1</li>')
-  
-  // Ordered lists
-  html = html.replace(/^[\s]*\d+\.\s+(.*)$/gm, '<li>$1</li>')
-  
-  // Wrap consecutive list items in ul/ol tags
-  html = html.replace(/(<li>.*<\/li>)(\s*<li>.*<\/li>)*/g, (match) => {
-    const items = match.match(/<li>.*<\/li>/g) || []
-    // Check if it's an ordered list by looking at the original text
-    const lines = text.split('\n')
-    const currentLineIndex = lines.findIndex(line => match.includes(line.trim()))
-    const isOrdered = /^\d+\./.test(lines[currentLineIndex] || '')
-    
-    if (isOrdered) {
-      return '<ol>' + items.join('') + '</ol>'
-    } else {
-      return '<ul>' + items.join('') + '</ul>'
-    }
-  })
-  
-  // Line breaks
-  html = html.replace(/\n\n/g, '</p><p>')
-  html = html.replace(/\n/g, '<br>')
-  
-  // Wrap in paragraphs
-  if (!html.startsWith('<')) {
-    html = '<p>' + html + '</p>'
-  }
-  
-  return html
 }
 
 const MainToolbarContent = ({
@@ -344,6 +281,16 @@ export function SimpleEditor({ initialContent, onUpdate }: SimpleEditorProps) {
         link: {
           openOnClick: false,
           enableClickSelection: true,
+        },
+      }),
+      Markdown.configure({
+        indentation: {
+          style: 'space',
+          size: 2,
+        },
+        markedOptions: {
+          gfm: true,
+          breaks: false,
         },
       }),
       HorizontalRule,
