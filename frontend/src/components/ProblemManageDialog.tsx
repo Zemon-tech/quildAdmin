@@ -11,6 +11,8 @@ import { Switch } from '@/components/ui/switch';
 import { Edit, Trash2, Plus, Clock, ListTodo, LineChart, Layers, Settings, ChevronLeft, Eye, Play, CheckCircle, BookOpen, FileText, Maximize2, Minimize2 } from 'lucide-react';
 import { SimpleEditor } from '@/components/tiptap-templates/simple/simple-editor'
 import { ChartAreaInteractive, ChartBarLabel, ChartLineInteractive, ChartRadarLinesOnly, ChartRadialSimple } from '@/components/charts';
+import { MCQTable } from '@/components/MCQTable';
+import { MCQEditModal } from '@/components/MCQEditModal';
 import { adminApi } from '@/lib/api';
 import type { Problem, Pod, PodPhase, PodStage, StageType, MCQQuestion, PracticeProblem, PaginatedPodsResponse, DifficultyLevel } from '@/types/admin';
 
@@ -100,6 +102,12 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
   const [stagesLoading, setStagesLoading] = useState(false);
   const [section, setSection] = useState<'pods' | 'stages' | 'analytics' | 'edit' | 'add' | 'editPod' | 'editStage' | 'viewContent'>('pods');
   const [isFocusMode, setIsFocusMode] = useState(false);
+
+  // MCQ management states
+  const [contentMode, setContentMode] = useState<'content' | 'mcqs'>('content');
+  const [mcqEditModal, setMcqEditModal] = useState(false);
+  const [editingMcq, setEditingMcq] = useState<MCQQuestion | null>(null);
+  const [editingMcqIndex, setEditingMcqIndex] = useState<number>(-1);
 
   // Content viewing states
   const [viewingStage, setViewingStage] = useState<PodStage | null>(null);
@@ -362,6 +370,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
       isRequired: stage.isRequired,
       content: stage.content as any,
     });
+    setContentMode('content'); // Reset to content mode when editing stage
     setSection('editStage');
   };
   const handleDeleteStage = async (stage: PodStage) => {
@@ -378,6 +387,48 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
       setSection('stages');
     }
     await loadStagesForPod(selectedPodId);
+  };
+
+  // MCQ management functions
+  const handleAddMCQ = () => {
+    setEditingMcq(null);
+    setEditingMcqIndex(-1);
+    setMcqEditModal(true);
+  };
+
+  const handleEditMCQ = (mcq: MCQQuestion, index: number) => {
+    setEditingMcq(mcq);
+    setEditingMcqIndex(index);
+    setMcqEditModal(true);
+  };
+
+  const handleDeleteMCQ = (index: number) => {
+    const newMcqs = stageForm.content.mcqs.filter((_: any, i: number) => i !== index);
+    setStageForm({
+      ...stageForm,
+      content: { ...stageForm.content, mcqs: newMcqs },
+    });
+  };
+
+  const handleSaveMCQ = (mcq: MCQQuestion) => {
+    if (editingMcqIndex >= 0) {
+      // Update existing MCQ
+      const newMcqs = [...stageForm.content.mcqs];
+      newMcqs[editingMcqIndex] = mcq;
+      setStageForm({
+        ...stageForm,
+        content: { ...stageForm.content, mcqs: newMcqs },
+      });
+    } else {
+      // Add new MCQ
+      setStageForm({
+        ...stageForm,
+        content: {
+          ...stageForm.content,
+          mcqs: [...stageForm.content.mcqs, mcq],
+        },
+      });
+    }
   };
 
   // Problem operations
@@ -1093,7 +1144,10 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                       </div>
                       <div className="col-span-3">
                         <Label htmlFor="edit_stage_type" className="text-xs">Type</Label>
-                        <Select value={stageForm.type} onValueChange={(v: StageType) => setStageForm({ ...stageForm, type: v })}>
+                        <Select value={stageForm.type} onValueChange={(v: StageType) => {
+                          setStageForm({ ...stageForm, type: v });
+                          setContentMode('content'); // Reset to content mode when type changes
+                        }}>
                           <SelectTrigger id="edit_stage_type" className="h-9"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="introduction">Introduction</SelectItem>
@@ -1140,40 +1194,92 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                         </div>
                       </div>
                     </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <Label htmlFor="edit_stage_content_md" className="text-xs">Content</Label>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setIsFocusMode(!isFocusMode)}
-                          className="h-7 px-2 text-muted-foreground hover:text-foreground"
-                        >
-                          <Maximize2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      <div className="border rounded-md">
-                        <div className="simple-editor-wrapper compact">
-                          <SimpleEditor
-                            initialContent={markdownToHtml(stageForm.content.content_md)}
-                            onUpdate={(html) => {
-                              setStageForm((prev) => ({
-                                ...prev,
-                                content: {
-                                  ...prev.content,
-                                  content_md: htmlToMarkdown(html),
-                                },
-                              }))
-                            }}
-                          />
+                    
+                    {/* Content/MCQ Toggle for Assessment Stages */}
+                    {stageForm.type === 'assessment' && (
+                      <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-md">
+                        <Label className="text-xs font-medium">Edit Mode:</Label>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant={contentMode === 'content' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setContentMode('content')}
+                            className="h-8"
+                          >
+                            Content
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={contentMode === 'mcqs' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setContentMode('mcqs')}
+                            className="h-8"
+                          >
+                            MCQs
+                          </Button>
                         </div>
                       </div>
-                    </div>
+                    )}
+
+                    {/* Content Editor Section */}
+                    {(stageForm.type !== 'assessment' || contentMode === 'content') && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label htmlFor="edit_stage_content_md" className="text-xs">Content</Label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsFocusMode(!isFocusMode)}
+                            className="h-7 px-2 text-muted-foreground hover:text-foreground"
+                          >
+                            <Maximize2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="border rounded-md">
+                          <div className="simple-editor-wrapper compact">
+                            <SimpleEditor
+                              initialContent={markdownToHtml(stageForm.content.content_md)}
+                              onUpdate={(html) => {
+                                setStageForm((prev) => ({
+                                  ...prev,
+                                  content: {
+                                    ...prev.content,
+                                    content_md: htmlToMarkdown(html),
+                                  },
+                                }))
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* MCQ Management Section */}
+                    {stageForm.type === 'assessment' && contentMode === 'mcqs' && (
+                      <div>
+                        <MCQTable
+                          mcqs={stageForm.content.mcqs || []}
+                          onAddMCQ={handleAddMCQ}
+                          onEditMCQ={handleEditMCQ}
+                          onDeleteMCQ={handleDeleteMCQ}
+                        />
+                      </div>
+                    )}
                   </>
                 )}
               </div>
             )}
+
+            {/* MCQ Edit Modal */}
+            <MCQEditModal
+              open={mcqEditModal}
+              onOpenChange={setMcqEditModal}
+              mcq={editingMcq}
+              onSave={handleSaveMCQ}
+              isEditing={editingMcqIndex >= 0}
+            />
 
             {/* Add Problem Section */}
             {section === 'add' && (
