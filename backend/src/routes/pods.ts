@@ -12,9 +12,10 @@ router.get('/admin/pods', authenticate, requireAdmin, async (req: AuthRequest, r
     const limit = parseInt(req.query.limit as string) || 10;
     const phase = req.query.phase as string;
     const search = req.query.search as string;
+    const problemId = req.query.problemId as string;
 
     const query: any = {};
-    
+
     if (phase) {
       query.phase = phase;
     }
@@ -23,8 +24,12 @@ router.get('/admin/pods', authenticate, requireAdmin, async (req: AuthRequest, r
       query.title = { $regex: search, $options: 'i' };
     }
 
+    if (problemId) {
+      query.problem = problemId;
+    }
+
     const skip = (page - 1) * limit;
-    
+
     const [pods, total] = await Promise.all([
       Pod.find(query)
         .skip(skip)
@@ -64,9 +69,9 @@ router.post('/admin/pods', authenticate, requireAdmin, async (req: AuthRequest, 
       problem: problemId,
       order: order || 0,
     });
-    
+
     await pod.save();
-    
+
     problem.pods.push({ pod: pod._id, order: pod.order, weight: 1 });
     await problem.save();
 
@@ -107,12 +112,12 @@ router.delete('/admin/pods/:id', authenticate, requireAdmin, async (req: AuthReq
     }
 
     await PodStage.deleteMany({ pod: req.params.id });
-    
+
     await Problem.updateOne(
       { _id: pod.problem },
       { $pull: { pods: { pod: req.params.id } } }
     );
-    
+
     res.json({ message: 'Pod deleted successfully' });
   } catch (error) {
     console.error('Error deleting pod:', error);

@@ -8,11 +8,11 @@ class ApiClient {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
-    
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     return headers;
   }
 
@@ -114,7 +114,16 @@ export const adminApi = {
     delete: (id: string) => apiClient.delete(`/api/admin/problems/${id}`),
   },
   Pods: {
-    list: () => apiClient.get<any>('/api/admin/pods'),
+    list: (params?: { problemId?: string; limit?: number; page?: number; search?: string; phase?: string }) => {
+      const query = new URLSearchParams();
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined) query.append(key, String(value));
+        });
+      }
+      const queryString = query.toString();
+      return apiClient.get<any>(`/api/admin/pods${queryString ? `?${queryString}` : ''}`);
+    },
     getProgress: (problemId: string) => apiClient.get<any>(`/api/pods/progress/${problemId}`),
     getStages: (podId: string) => apiClient.get<any>(`/api/pods/${podId}/stages`),
     getContent: (podId: string) => apiClient.get<any>(`/api/content/pods/${podId}/content`),

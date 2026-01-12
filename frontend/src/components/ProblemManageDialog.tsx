@@ -208,9 +208,9 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
   const loadPodsForProblem = async (problemId: string): Promise<string> => {
     try {
       setPodsLoading(true);
-      const response: PaginatedPodsResponse = await adminApi.Pods.list();
+      const response: PaginatedPodsResponse = await adminApi.Pods.list({ problemId, limit: 100 });
       const allPods: Pod[] = (response as any).pods || (response as any) || [];
-      const filtered = allPods.filter((p: any) => (((p.problem as any)?._id) || p.problem) === problemId);
+      const filtered = allPods;
       setPods(filtered);
       if (filtered.length > 0) {
         const firstId = (filtered[0] as any)._id || '';
