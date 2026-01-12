@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -170,7 +170,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
     } else if (open) {
       setProblemForm({ ...emptyProblem });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, problem?._id]);
 
   useEffect(() => {
@@ -185,7 +185,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
       await loadStagesForPod(firstId);
     };
     if (open) init();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, problem?._id]);
 
   // Escape key handler to exit focus mode
@@ -441,11 +441,11 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
     await adminApi.Problems.create(problemForm);
     onOpenChange(false);
   };
-  
+
   const handleDeleteProblem = async () => {
     if (!problem?._id) return;
     if (!confirm(`Are you sure you want to delete "${problem.title}"? This action cannot be undone.`)) return;
-    
+
     try {
       await adminApi.Problems.delete(problem._id);
       onOpenChange(false);
@@ -454,35 +454,46 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
       alert('Failed to delete problem. Please try again.');
     }
   };
-  
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton={false} className="p-0 gap-0 h-[calc(100vh-3rem)] w-full max-w-[calc(100%-3rem)] sm:max-w-[calc(100%-3rem)] rounded-xl shadow-xl overflow-hidden">
+        <DialogHeader className="sr-only">
+          <DialogTitle>
+            {section === 'edit' ? `Edit: ${problem?.title || 'Problem'}` :
+              section === 'editPod' ? `Edit Pod: ${editingPod?.title || 'Pod'}` :
+                section === 'editStage' ? `Edit Stage: ${editingStage?.title || 'Stage'}` :
+                  `Manage: ${problem?.title || 'Problem'}`}
+          </DialogTitle>
+          <DialogDescription>
+            Manage pods, stages, and analytics for this problem.
+          </DialogDescription>
+        </DialogHeader>
         <div className="flex h-full min-h-0">
           {/* Sidebar */}
-          <aside className={`${isFocusMode && section === 'editStage' ? 'hidden' : 'w-64'} border-r bg-muted/30 h-full flex-shrink-0 p-4 space-y-2 overflow-y-auto transition-all duration-300`}>
+          <aside className={`${isFocusMode && section === 'editStage' ? 'hidden' : 'w-64'} border-r bg-muted/30 h-full shrink-0 p-4 space-y-2 overflow-y-auto transition-all duration-300`}>
             <button className="w-full text-left px-3 py-2 rounded hover:bg-muted mb-2" onClick={() => onOpenChange(false)}>
-              <div className="flex items-center gap-2"><ChevronLeft className="h-4 w-4"/> <span>Back</span></div>
+              <div className="flex items-center gap-2"><ChevronLeft className="h-4 w-4" /> <span>Back</span></div>
             </button>
             <div className="text-xs text-muted-foreground px-2">PROBLEM</div>
-            <button className={`w-full text-left px-3 py-2 rounded hover:bg-muted ${section==='pods'?'bg-muted':''}`} onClick={() => setSection('pods')}>
-              <div className="flex items-center gap-2"><Layers className="h-4 w-4"/> <span>Pods</span></div>
+            <button className={`w-full text-left px-3 py-2 rounded hover:bg-muted ${section === 'pods' ? 'bg-muted' : ''}`} onClick={() => setSection('pods')}>
+              <div className="flex items-center gap-2"><Layers className="h-4 w-4" /> <span>Pods</span></div>
             </button>
-            <button className={`w-full text-left px-3 py-2 rounded hover:bg-muted ${section==='stages'?'bg-muted':''}`} onClick={() => setSection('stages')}>
-              <div className="flex items-center gap-2"><ListTodo className="h-4 w-4"/> <span>Stages</span></div>
+            <button className={`w-full text-left px-3 py-2 rounded hover:bg-muted ${section === 'stages' ? 'bg-muted' : ''}`} onClick={() => setSection('stages')}>
+              <div className="flex items-center gap-2"><ListTodo className="h-4 w-4" /> <span>Stages</span></div>
             </button>
-            <button className={`w-full text-left px-3 py-2 rounded hover:bg-muted ${section==='analytics'?'bg-muted':''}`} onClick={() => setSection('analytics')}>
-              <div className="flex items-center gap-2"><LineChart className="h-4 w-4"/> <span>Analytics</span></div>
+            <button className={`w-full text-left px-3 py-2 rounded hover:bg-muted ${section === 'analytics' ? 'bg-muted' : ''}`} onClick={() => setSection('analytics')}>
+              <div className="flex items-center gap-2"><LineChart className="h-4 w-4" /> <span>Analytics</span></div>
             </button>
             {problem?._id && (
               <>
                 <div className="text-xs text-muted-foreground px-2 mt-4">ACTIONS</div>
-                <button className={`w-full text-left px-3 py-2 rounded hover:bg-muted ${section==='edit'?'bg-muted':''}`} onClick={() => setSection('edit')}>
-                  <div className="flex items-center gap-2"><Settings className="h-4 w-4"/> <span>Edit Problem</span></div>
+                <button className={`w-full text-left px-3 py-2 rounded hover:bg-muted ${section === 'edit' ? 'bg-muted' : ''}`} onClick={() => setSection('edit')}>
+                  <div className="flex items-center gap-2"><Settings className="h-4 w-4" /> <span>Edit Problem</span></div>
                 </button>
                 <button className="w-full text-left px-3 py-2 rounded hover:bg-muted text-destructive" onClick={handleDeleteProblem}>
-                  <div className="flex items-center gap-2"><Trash2 className="h-4 w-4"/> <span>Delete Problem</span></div>
+                  <div className="flex items-center gap-2"><Trash2 className="h-4 w-4" /> <span>Delete Problem</span></div>
                 </button>
               </>
             )}
@@ -508,9 +519,9 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                   <div className="text-xs text-muted-foreground">Account & settings like layout</div>
                   <h2 className="text-xl font-semibold">
                     {section === 'edit' ? `Edit: ${problem?.title || 'Problem'}` :
-                     section === 'editPod' ? `Edit Pod: ${editingPod?.title || 'Pod'}` :
-                     section === 'editStage' ? `Edit Stage: ${editingStage?.title || 'Stage'}` :
-                     `Manage: ${problem?.title || 'Problem'}`}
+                      section === 'editPod' ? `Edit Pod: ${editingPod?.title || 'Pod'}` :
+                        section === 'editStage' ? `Edit Stage: ${editingStage?.title || 'Stage'}` :
+                          `Manage: ${problem?.title || 'Problem'}`}
                   </h2>
                 </div>
               </div>
@@ -657,8 +668,8 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={(stage as any).userProgress?.status === 'completed' ? 'default' : 
-                                             (stage as any).userProgress?.status === 'in_progress' ? 'secondary' : 'outline'}>
+                              <Badge variant={(stage as any).userProgress?.status === 'completed' ? 'default' :
+                                (stage as any).userProgress?.status === 'in_progress' ? 'secondary' : 'outline'}>
                                 {(stage as any).userProgress?.status || 'Not Started'}
                               </Badge>
                             </TableCell>
@@ -723,7 +734,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Pod Progress Chart */}
                   <ChartAreaInteractive />
-                  
+
                   {/* Stage Distribution Chart */}
                   <ChartBarLabel />
                 </div>
@@ -731,7 +742,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Learning Progress Chart */}
                   <ChartLineInteractive />
-                  
+
                   {/* Pod Phase Distribution */}
                   <ChartRadialSimple />
                 </div>
@@ -778,8 +789,8 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                       </div>
                       <div>
                         <Label className="text-xs text-muted-foreground">Your Progress</Label>
-                        <Badge variant={stageContent.userProgress?.status === 'completed' ? 'default' : 
-                                       stageContent.userProgress?.status === 'in_progress' ? 'secondary' : 'outline'}>
+                        <Badge variant={stageContent.userProgress?.status === 'completed' ? 'default' :
+                          stageContent.userProgress?.status === 'in_progress' ? 'secondary' : 'outline'}>
                           {stageContent.userProgress?.status || 'Not Started'}
                         </Badge>
                       </div>
@@ -858,8 +869,8 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                               <div key={mcq.id} className="border rounded-lg p-4">
                                 <div className="flex items-center justify-between mb-2">
                                   <h4 className="font-medium">Question {index + 1}</h4>
-                                  <Badge variant={mcq.difficulty === 'easy' ? 'secondary' : 
-                                                 mcq.difficulty === 'medium' ? 'default' : 'destructive'}>
+                                  <Badge variant={mcq.difficulty === 'easy' ? 'secondary' :
+                                    mcq.difficulty === 'medium' ? 'default' : 'destructive'}>
                                     {mcq.difficulty}
                                   </Badge>
                                 </div>
@@ -899,8 +910,8 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                               <div key={problem.id} className="border rounded-lg p-4">
                                 <div className="flex items-center justify-between mb-2">
                                   <h4 className="font-medium">Problem {index + 1}</h4>
-                                  <Badge variant={problem.difficulty === 'easy' ? 'secondary' : 
-                                                 problem.difficulty === 'medium' ? 'default' : 'destructive'}>
+                                  <Badge variant={problem.difficulty === 'easy' ? 'secondary' :
+                                    problem.difficulty === 'medium' ? 'default' : 'destructive'}>
                                     {problem.difficulty}
                                   </Badge>
                                 </div>
@@ -974,19 +985,19 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                       )}
 
                       {/* If no content */}
-                      {!stageContent.content?.introduction && 
-                       !stageContent.content?.learningObjectives?.length &&
-                       !stageContent.content?.content_md &&
-                       !stageContent.externalContent &&
-                       !stageContent.content?.mcqs?.length &&
-                       !stageContent.content?.practiceProblems?.length &&
-                       !stageContent.content?.resources?.length && (
-                        <Card>
-                          <CardContent className="pt-6 text-center">
-                            <p className="text-muted-foreground">No content available for this stage.</p>
-                          </CardContent>
-                        </Card>
-                      )}
+                      {!stageContent.content?.introduction &&
+                        !stageContent.content?.learningObjectives?.length &&
+                        !stageContent.content?.content_md &&
+                        !stageContent.externalContent &&
+                        !stageContent.content?.mcqs?.length &&
+                        !stageContent.content?.practiceProblems?.length &&
+                        !stageContent.content?.resources?.length && (
+                          <Card>
+                            <CardContent className="pt-6 text-center">
+                              <p className="text-muted-foreground">No content available for this stage.</p>
+                            </CardContent>
+                          </Card>
+                        )}
                     </div>
                   </div>
                 ) : (
@@ -1093,7 +1104,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                   <Label htmlFor="edit_pod_desc">Description (Markdown)</Label>
                   <MarkdownEditor value={podForm.description_md} onChange={(value) => setPodForm({ ...podForm, description_md: value })} />
                 </div>
-                              </div>
+              </div>
             )}
 
             {/* Edit Stage Section */}
@@ -1194,7 +1205,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Content/MCQ Toggle for Assessment Stages */}
                     {stageForm.type === 'assessment' && (
                       <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-md">
@@ -1339,8 +1350,8 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
         </div>
       </DialogContent>
 
-        {/* Commented out old dialogs - now using full-page sections */}
-        {/*
+      {/* Commented out old dialogs - now using full-page sections */}
+      {/*
         <Dialog open={podDialogOpen} onOpenChange={setPodDialogOpen}>
           <DialogContent className="max-w-2xl h-[90vh] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
