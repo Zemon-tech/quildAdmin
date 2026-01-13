@@ -73,7 +73,7 @@ import { useCursorVisibility } from "@/hooks/use-cursor-visibility"
 import { ThemeToggle } from "@/components/tiptap-templates/simple/theme-toggle"
 
 // --- Lib ---
-import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
+import { cn, handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
 
 // --- Styles ---
 import "@/components/tiptap-templates/simple/simple-editor.scss"
@@ -252,9 +252,10 @@ const MobileToolbarContent = ({
 export type SimpleEditorProps = {
   initialContent?: string
   onUpdate?: (html: string) => void
+  className?: string
 }
 
-export function SimpleEditor({ initialContent, onUpdate }: SimpleEditorProps) {
+export function SimpleEditor({ initialContent, onUpdate, className }: SimpleEditorProps) {
   const isMobile = useIsBreakpoint()
   const { height } = useWindowSize()
   const [mobileView, setMobileView] = useState<"main" | "highlighter" | "link">(
@@ -449,7 +450,7 @@ export function SimpleEditor({ initialContent, onUpdate }: SimpleEditorProps) {
   }, [isMobile, mobileView])
 
   return (
-    <div className="simple-editor-wrapper" ref={wrapperRef}>
+    <div className={cn("simple-editor-wrapper", className)} ref={wrapperRef}>
       <EditorContext.Provider value={{ editor }}>
         <Toolbar
           ref={toolbarRef}

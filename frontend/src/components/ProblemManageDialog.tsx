@@ -1109,7 +1109,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
 
             {/* Edit Stage Section */}
             {section === 'editStage' && (
-              <div className={`flex-1 ${isFocusMode ? 'p-0' : 'p-6'} space-y-4 overflow-y-auto transition-all duration-300 relative`}>
+              <div className={`flex-1 ${isFocusMode ? 'p-0 overflow-hidden' : 'p-6 overflow-y-auto'} space-y-4 transition-all duration-300 relative`}>
                 {isFocusMode && (
                   // Floating exit button for focus mode
                   <div className="fixed bottom-4 right-4 z-50">
@@ -1129,20 +1129,19 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                   // Focus Mode - Show only Simple Editor
                   <div className="h-full flex flex-col">
                     <div className="h-full border-0">
-                      <div className="simple-editor-wrapper h-full">
-                        <SimpleEditor
-                          initialContent={markdownToHtml(stageForm.content.content_md)}
-                          onUpdate={(html) => {
-                            setStageForm((prev) => ({
-                              ...prev,
-                              content: {
-                                ...prev.content,
-                                content_md: htmlToMarkdown(html),
-                              },
-                            }))
-                          }}
-                        />
-                      </div>
+                      <SimpleEditor
+                        className="h-full"
+                        initialContent={markdownToHtml(stageForm.content.content_md)}
+                        onUpdate={(html) => {
+                          setStageForm((prev) => ({
+                            ...prev,
+                            content: {
+                              ...prev.content,
+                              content_md: htmlToMarkdown(html),
+                            },
+                          }))
+                        }}
+                      />
                     </div>
                   </div>
                 ) : (

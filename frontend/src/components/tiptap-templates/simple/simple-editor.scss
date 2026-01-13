@@ -87,10 +87,14 @@ body,
 
 .simple-editor-wrapper.h-full {
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .simple-editor-wrapper.h-full .simple-editor-content {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
+  height: auto;
 }
 
 .simple-editor-wrapper.h-full .simple-editor-content .tiptap.ProseMirror.simple-editor {
@@ -103,7 +107,7 @@ body,
   .simple-editor-content .tiptap.ProseMirror.simple-editor {
     padding: 1rem 1.5rem 30vh;
   }
-  
+
   .simple-editor-wrapper.compact .simple-editor-content .tiptap.ProseMirror.simple-editor {
     padding: 0.75rem 1rem 2vh;
     min-height: 150px;
