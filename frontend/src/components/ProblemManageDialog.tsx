@@ -500,9 +500,9 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
           </aside>
 
           {/* Main content */}
-          <main className={`${isFocusMode && section === 'editStage' ? 'w-full' : 'flex-1'} h-full min-h-0 flex flex-col overflow-hidden transition-all duration-300`}>
-            <div className={`border-b p-4 flex items-center justify-between ${isFocusMode && section === 'editStage' ? 'hidden' : ''}`}>
-              <div className="flex items-center gap-4">
+          <main className={`${isFocusMode && section === 'editStage' ? 'w-full' : 'flex-1'} h-full min-h-0 min-w-0 flex flex-col overflow-hidden transition-all duration-300`}>
+            <div className={`border-b p-4 flex items-center justify-between gap-4 ${isFocusMode && section === 'editStage' ? 'hidden' : ''}`}>
+              <div className="flex items-center gap-4 min-w-0 flex-1">
                 {isFocusMode && section === 'editStage' && (
                   <Button
                     type="button"
@@ -515,7 +515,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                     <span>Back to Standard View</span>
                   </Button>
                 )}
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="text-xs text-muted-foreground">Account & settings like layout</div>
                   <h2 className="text-xl font-semibold">
                     {section === 'edit' ? `Edit: ${problem?.title || 'Problem'}` :
@@ -1183,30 +1183,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                         <Label htmlFor="edit_stage_required" className="text-xs">Required</Label>
                       </div>
                     </div>
-                    <div>
-                      <Label htmlFor="edit_stage_description" className="text-xs">Description</Label>
-                      <div className="border rounded-md mt-1">
-                        <div className="simple-editor-wrapper compact">
-                          <SimpleEditor
-                            initialContent={markdownToHtml(stageForm.description)}
-                            onUpdate={(html) => setStageForm({ ...stageForm, description: htmlToMarkdown(html) })}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="edit_stage_intro" className="text-xs">Introduction</Label>
-                      <div className="border rounded-md mt-1">
-                        <div className="simple-editor-wrapper compact">
-                          <SimpleEditor
-                            initialContent={markdownToHtml(stageForm.content.introduction)}
-                            onUpdate={(html) => setStageForm({ ...stageForm, content: { ...stageForm.content, introduction: htmlToMarkdown(html) } })}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Content/MCQ Toggle for Assessment Stages */}
+                    {/* Content Editor Section */}
                     {stageForm.type === 'assessment' && (
                       <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-md">
                         <Label className="text-xs font-medium">Edit Mode:</Label>
@@ -1233,7 +1210,6 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                       </div>
                     )}
 
-                    {/* Content Editor Section */}
                     {(stageForm.type !== 'assessment' || contentMode === 'content') && (
                       <div>
                         <div className="flex items-center justify-between mb-2">
@@ -1267,7 +1243,6 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                       </div>
                     )}
 
-                    {/* MCQ Management Section */}
                     {stageForm.type === 'assessment' && contentMode === 'mcqs' && (
                       <div>
                         <MCQTable
@@ -1278,6 +1253,29 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                         />
                       </div>
                     )}
+
+                    <div>
+                      <Label htmlFor="edit_stage_description" className="text-xs">Description</Label>
+                      <div className="border rounded-md mt-1">
+                        <div className="simple-editor-wrapper compact">
+                          <SimpleEditor
+                            initialContent={markdownToHtml(stageForm.description)}
+                            onUpdate={(html) => setStageForm({ ...stageForm, description: htmlToMarkdown(html) })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit_stage_intro" className="text-xs">Introduction</Label>
+                      <div className="border rounded-md mt-1">
+                        <div className="simple-editor-wrapper compact">
+                          <SimpleEditor
+                            initialContent={markdownToHtml(stageForm.content.introduction)}
+                            onUpdate={(html) => setStageForm({ ...stageForm, content: { ...stageForm.content, introduction: htmlToMarkdown(html) } })}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </>
                 )}
               </div>

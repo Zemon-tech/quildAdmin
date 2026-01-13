@@ -151,8 +151,6 @@ const MainToolbarContent = ({
 }) => {
   return (
     <>
-      <Spacer />
-
       <ToolbarGroup>
         <UndoRedoButton action="undo" />
         <UndoRedoButton action="redo" />
@@ -327,7 +325,7 @@ export function SimpleEditor({ initialContent, onUpdate }: SimpleEditorProps) {
     const handler = () => {
       try {
         onUpdate?.(editor.getHTML())
-      } catch {}
+      } catch { }
     }
     editor.on("update", handler)
     return () => {
@@ -348,13 +346,15 @@ export function SimpleEditor({ initialContent, onUpdate }: SimpleEditorProps) {
       { label: "Quote", action: () => editor?.chain().focus().toggleBlockquote().run() },
       { label: "Code block", action: () => editor?.chain().focus().toggleCodeBlock().run() },
       { label: "Divider", action: () => editor?.chain().focus().setHorizontalRule().run() },
-      { label: "Link", action: () => {
+      {
+        label: "Link", action: () => {
           const url = window.prompt("Enter URL")
           if (!url) return
           editor?.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
         }
       },
-      { label: "Image Upload", action: () => {
+      {
+        label: "Image Upload", action: () => {
           // Trigger image upload by inserting an upload node
           editor?.chain().focus().insertContent({
             type: 'imageUpload',
@@ -366,7 +366,8 @@ export function SimpleEditor({ initialContent, onUpdate }: SimpleEditorProps) {
           }).run()
         }
       },
-      { label: "Image URL", action: () => {
+      {
+        label: "Image URL", action: () => {
           const url = window.prompt("Enter image URL")
           if (!url) return
           editor?.chain().focus().setImage({ src: url }).run()
@@ -457,8 +458,8 @@ export function SimpleEditor({ initialContent, onUpdate }: SimpleEditorProps) {
             borderRadius: 0,
             ...(isMobile
               ? {
-                  bottom: `calc(100% - ${height - rect.y}px)`,
-                }
+                bottom: `calc(100% - ${height - rect.y}px)`,
+              }
               : {}),
           }}
         >
