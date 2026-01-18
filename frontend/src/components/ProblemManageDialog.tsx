@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Edit, Trash2, Plus, Clock, ListTodo, LineChart, Layers, Settings, ChevronLeft, Eye, Play, CheckCircle, BookOpen, FileText, Maximize2, Minimize2 } from 'lucide-react';
+import { Edit, Trash2, Plus, Layers, Settings, ChevronLeft, LineChart, BookOpen, FileText, Maximize2, Minimize2 } from 'lucide-react';
 import { SimpleEditor } from '@/components/tiptap-templates/simple/simple-editor'
 import { ChartAreaInteractive, ChartBarLabel, ChartLineInteractive, ChartRadarLinesOnly, ChartRadialSimple } from '@/components/charts';
 import { MCQTable } from '@/components/MCQTable';
@@ -115,6 +115,8 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
   const [contentLoading, setContentLoading] = useState(false);
 
   const [editingPod, setEditingPod] = useState<Pod | null>(null);
+  const [podStages, setPodStages] = useState<PodStage[]>([]);
+  const [podStagesLoading, setPodStagesLoading] = useState(false);
   const [podForm, setPodForm] = useState({
     problem: '',
     title: '',
@@ -147,12 +149,15 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
   const emptyProblem = {
     slug: '',
     title: '',
-    description_md: '',
     tagline: '',
-    context_md: '',
     difficulty: 'beginner' as DifficultyLevel,
     estimatedHours: 1,
     isPublic: false,
+    coreTheme: '',
+    yourGoal: '',
+    whoIsThisFor: '',
+    whatSuccessLooksLike: '',
+    skills: '',
   };
   const [problemForm, setProblemForm] = useState({ ...emptyProblem });
   useEffect(() => {
@@ -160,12 +165,15 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
       setProblemForm({
         slug: problem.slug,
         title: problem.title,
-        description_md: problem.description_md || '',
         tagline: problem.tagline || '',
-        context_md: problem.context_md || '',
         difficulty: problem.difficulty as DifficultyLevel,
         estimatedHours: problem.estimatedHours,
         isPublic: problem.isPublic,
+        coreTheme: (problem as any).coreTheme || '',
+        yourGoal: (problem as any).yourGoal || '',
+        whoIsThisFor: (problem as any).whoIsThisFor || '',
+        whatSuccessLooksLike: (problem as any).whatSuccessLooksLike || '',
+        skills: (problem as any).skills || '',
       });
     } else if (open) {
       setProblemForm({ ...emptyProblem });
@@ -233,16 +241,22 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
     try {
       if (!podId) {
         setStages([]);
+        setPodStages([]);
         return;
       }
       setStagesLoading(true);
+      setPodStagesLoading(true);
       // Use the new enhanced endpoint that includes user progress
       const response = await adminApi.Stages.list(podId);
-      setStages(response.stages || []);
+      const stagesList = response.stages || [];
+      setStages(stagesList);
+      setPodStages(stagesList);
     } catch (e) {
       setStages([]);
+      setPodStages([]);
     } finally {
       setStagesLoading(false);
+      setPodStagesLoading(false);
     }
   };
 
@@ -323,7 +337,7 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
     setPodForm({ problem: problem._id, title: '', phase: 'research', order: 0, description_md: '', estimatedMinutes: 60, mode: 'multi_stage' });
     setSection('editPod');
   };
-  const handleEditPod = (pod: Pod) => {
+  const handleEditPod = async (pod: Pod) => {
     setEditingPod(pod);
     setPodForm({
       problem: ((pod.problem as any)?._id) || (pod.problem as any),
@@ -334,6 +348,8 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
       estimatedMinutes: pod.estimatedMinutes || 60,
       mode: pod.mode || 'multi_stage',
     });
+    // Load stages for this pod
+    await loadStagesForPod(pod._id!);
     setSection('editPod');
   };
   const handleDeletePod = async (pod: Pod) => {
@@ -353,9 +369,9 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
   };
 
   const handleCreateStage = () => {
-    if (!selectedPodId) return;
+    if (!editingPod?._id) return;
     setEditingStage(null);
-    setStageForm({ pod: selectedPodId, title: '', description: '', order: 0, type: 'introduction', estimatedMinutes: 30, isRequired: true, content: { introduction: '', learningObjectives: [], content_md: '', mcqs: [], practiceProblems: [] } });
+    setStageForm({ pod: editingPod._id!, title: '', description: '', order: 0, type: 'introduction', estimatedMinutes: 30, isRequired: true, content: { introduction: '', learningObjectives: [], content_md: '', mcqs: [], practiceProblems: [] } });
     setSection('editStage');
   };
   const handleEditStage = (stage: PodStage) => {
@@ -376,17 +392,17 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
   const handleDeleteStage = async (stage: PodStage) => {
     if (!confirm(`Are you sure you want to delete "${stage.title}"?`)) return;
     await adminApi.Stages.delete(stage._id!);
-    await loadStagesForPod(selectedPodId);
+    if (editingPod?._id) await loadStagesForPod(editingPod._id);
   };
   const handleSubmitStage = async () => {
     if (editingStage) {
       await adminApi.Stages.update(editingStage._id!, stageForm);
-      setSection('stages');
+      setSection('editPod');
     } else {
       await adminApi.Stages.create(stageForm);
-      setSection('stages');
+      setSection('editPod');
     }
-    await loadStagesForPod(selectedPodId);
+    if (editingPod?._id) await loadStagesForPod(editingPod._id);
   };
 
   // MCQ management functions
@@ -479,9 +495,6 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
             <div className="text-xs text-muted-foreground px-2">PROBLEM</div>
             <button className={`w-full text-left px-3 py-2 rounded hover:bg-muted ${section === 'pods' ? 'bg-muted' : ''}`} onClick={() => setSection('pods')}>
               <div className="flex items-center gap-2"><Layers className="h-4 w-4" /> <span>Pods</span></div>
-            </button>
-            <button className={`w-full text-left px-3 py-2 rounded hover:bg-muted ${section === 'stages' ? 'bg-muted' : ''}`} onClick={() => setSection('stages')}>
-              <div className="flex items-center gap-2"><ListTodo className="h-4 w-4" /> <span>Stages</span></div>
             </button>
             <button className={`w-full text-left px-3 py-2 rounded hover:bg-muted ${section === 'analytics' ? 'bg-muted' : ''}`} onClick={() => setSection('analytics')}>
               <div className="flex items-center gap-2"><LineChart className="h-4 w-4" /> <span>Analytics</span></div>
@@ -595,99 +608,6 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleDeletePod(pod); }}>
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            )}
-
-            {/* Stages Section */}
-            {section === 'stages' && (
-              <div className="flex-1 p-6 space-y-4 overflow-y-auto">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">
-                    {selectedPodId ? `Stages for selected pod` : 'Select a pod to view stages'}
-                  </div>
-                  <Button size="sm" onClick={handleCreateStage} disabled={!selectedPodId}>
-                    <Plus className="mr-2 h-4 w-4" /> New Stage
-                  </Button>
-                </div>
-                <div className="rounded-md border overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Order</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead>Required</TableHead>
-                        <TableHead>Progress</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {stagesLoading ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading stages...</TableCell>
-                        </TableRow>
-                      ) : stages.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                            {selectedPodId ? 'No stages' : 'Select a pod to view stages'}
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        stages.map((stage) => (
-                          <TableRow key={stage._id}>
-                            <TableCell className="font-medium">{stage.title}</TableCell>
-                            <TableCell>
-                              <Badge className={getStageTypeColor(stage.type)}>{stage.type}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <ListTodo className="h-4 w-4 text-muted-foreground" />
-                                <span>{stage.order}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-muted-foreground" />
-                                <span>{stage.estimatedMinutes}m</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={stage.isRequired ? 'default' : 'secondary'}>
-                                {stage.isRequired ? 'Yes' : 'No'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={(stage as any).userProgress?.status === 'completed' ? 'default' :
-                                (stage as any).userProgress?.status === 'in_progress' ? 'secondary' : 'outline'}>
-                                {(stage as any).userProgress?.status || 'Not Started'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button variant="ghost" size="sm" onClick={() => handleViewStageContent(stage)}>
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={() => handleStartStage(stage)}>
-                                  <Play className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={() => handleCompleteStage(stage)}>
-                                  <CheckCircle className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={() => handleEditStage(stage)}>
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={() => handleDeleteStage(stage)}>
                                   <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                               </div>
@@ -1047,13 +967,30 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                     <Label htmlFor="isPublic">Make this problem public</Label>
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="description">Description (Markdown)</Label>
-                  <MarkdownEditor value={problemForm.description_md} onChange={(value) => setProblemForm({ ...problemForm, description_md: value })} />
+
+                <div className="space-y-4 pt-4 border-t">
+                  <div className="text-sm font-medium">Description</div>
+                  <div>
+                    <Label htmlFor="coreTheme">Core Theme</Label>
+                    <Input id="coreTheme" value={problemForm.coreTheme} onChange={(e) => setProblemForm({ ...problemForm, coreTheme: e.target.value })} placeholder="What is the core theme of this problem?" />
+                  </div>
+                  <div>
+                    <Label htmlFor="yourGoal">Your Goal</Label>
+                    <Input id="yourGoal" value={problemForm.yourGoal} onChange={(e) => setProblemForm({ ...problemForm, yourGoal: e.target.value })} placeholder="What is the goal?" />
+                  </div>
+                  <div>
+                    <Label htmlFor="whoIsThisFor">Who is this for</Label>
+                    <Input id="whoIsThisFor" value={problemForm.whoIsThisFor} onChange={(e) => setProblemForm({ ...problemForm, whoIsThisFor: e.target.value })} placeholder="Who is the target audience?" />
+                  </div>
+                  <div>
+                    <Label htmlFor="whatSuccessLooksLike">What success looks like</Label>
+                    <Input id="whatSuccessLooksLike" value={problemForm.whatSuccessLooksLike} onChange={(e) => setProblemForm({ ...problemForm, whatSuccessLooksLike: e.target.value })} placeholder="How do you measure success?" />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="context">Context (Markdown)</Label>
-                  <MarkdownEditor value={problemForm.context_md} onChange={(value) => setProblemForm({ ...problemForm, context_md: value })} />
+
+                <div className="pt-4 border-t">
+                  <Label htmlFor="skills">Skills</Label>
+                  <Input id="skills" value={problemForm.skills} onChange={(e) => setProblemForm({ ...problemForm, skills: e.target.value })} placeholder="e.g., React, Frontend, TypeScript (comma separated)" />
                 </div>
               </div>
             )}
@@ -1104,6 +1041,71 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                   <Label htmlFor="edit_pod_desc">Description (Markdown)</Label>
                   <MarkdownEditor value={podForm.description_md} onChange={(value) => setPodForm({ ...podForm, description_md: value })} />
                 </div>
+
+                {/* Stages Table for Pod */}
+                {editingPod && (
+                  <div className="space-y-4 pt-4 border-t">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium">Stages for this Pod</div>
+                      <Button size="sm" onClick={handleCreateStage}>
+                        <Plus className="mr-2 h-4 w-4" /> New Stage
+                      </Button>
+                    </div>
+                    <div className="rounded-md border overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Title</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Order</TableHead>
+                            <TableHead>Duration</TableHead>
+                            <TableHead>Required</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {podStagesLoading ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading stages...</TableCell>
+                            </TableRow>
+                          ) : podStages.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                No stages for this pod
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            podStages.map((stage) => (
+                              <TableRow key={stage._id}>
+                                <TableCell className="font-medium">{stage.title}</TableCell>
+                                <TableCell>
+                                  <Badge className={getStageTypeColor(stage.type)}>{stage.type}</Badge>
+                                </TableCell>
+                                <TableCell>{stage.order}</TableCell>
+                                <TableCell>{stage.estimatedMinutes}m</TableCell>
+                                <TableCell>
+                                  <Badge variant={stage.isRequired ? 'default' : 'secondary'}>
+                                    {stage.isRequired ? 'Yes' : 'No'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button variant="ghost" size="sm" onClick={() => handleEditStage(stage)}>
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleDeleteStage(stage)}>
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1328,14 +1330,32 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                     <Label htmlFor="add_isPublic">Make this problem public</Label>
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="add_description">Description (Markdown)</Label>
-                  <MarkdownEditor value={problemForm.description_md} onChange={(value) => setProblemForm({ ...problemForm, description_md: value })} />
+
+                <div className="space-y-4 pt-4 border-t">
+                  <div className="text-sm font-medium">Description</div>
+                  <div>
+                    <Label htmlFor="add_coreTheme">Core Theme</Label>
+                    <Input id="add_coreTheme" value={problemForm.coreTheme} onChange={(e) => setProblemForm({ ...problemForm, coreTheme: e.target.value })} placeholder="What is the core theme of this problem?" />
+                  </div>
+                  <div>
+                    <Label htmlFor="add_yourGoal">Your Goal</Label>
+                    <Input id="add_yourGoal" value={problemForm.yourGoal} onChange={(e) => setProblemForm({ ...problemForm, yourGoal: e.target.value })} placeholder="What is the goal?" />
+                  </div>
+                  <div>
+                    <Label htmlFor="add_whoIsThisFor">Who is this for</Label>
+                    <Input id="add_whoIsThisFor" value={problemForm.whoIsThisFor} onChange={(e) => setProblemForm({ ...problemForm, whoIsThisFor: e.target.value })} placeholder="Who is the target audience?" />
+                  </div>
+                  <div>
+                    <Label htmlFor="add_whatSuccessLooksLike">What success looks like</Label>
+                    <Input id="add_whatSuccessLooksLike" value={problemForm.whatSuccessLooksLike} onChange={(e) => setProblemForm({ ...problemForm, whatSuccessLooksLike: e.target.value })} placeholder="How do you measure success?" />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="add_context">Context (Markdown)</Label>
-                  <MarkdownEditor value={problemForm.context_md} onChange={(value) => setProblemForm({ ...problemForm, context_md: value })} />
+
+                <div className="pt-4 border-t">
+                  <Label htmlFor="add_skills">Skills</Label>
+                  <Input id="add_skills" value={problemForm.skills} onChange={(e) => setProblemForm({ ...problemForm, skills: e.target.value })} placeholder="e.g., React, Frontend, TypeScript (comma separated)" />
                 </div>
+
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                   <Button onClick={handleCreateProblem}>Create Problem</Button>
