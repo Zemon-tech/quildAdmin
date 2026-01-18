@@ -16,7 +16,7 @@ import { MCQEditModal } from '@/components/MCQEditModal';
 import { adminApi } from '@/lib/api';
 import type { Problem, Pod, PodPhase, PodStage, StageType, MCQQuestion, PracticeProblem, PaginatedPodsResponse, DifficultyLevel } from '@/types/admin';
 
-// simple HTML <-> Markdown helpers
+// Simple markdown to HTML converter for display purposes only
 const markdownToHtml = (md: string): string => {
   if (!md) return ''
   let html = md
@@ -42,31 +42,6 @@ const markdownToHtml = (md: string): string => {
   return html
 }
 
-const htmlToMarkdown = (html: string): string => {
-  if (!html) return ''
-  let md = html
-  md = md.replace(/\n/g, '')
-  md = md.replace(/<h1>(.*?)<\/h1>/gi, '# $1\n')
-  md = md.replace(/<h2>(.*?)<\/h2>/gi, '## $1\n')
-  md = md.replace(/<h3>(.*?)<\/h3>/gi, '### $1\n')
-  md = md.replace(/<h4>(.*?)<\/h4>/gi, '#### $1\n')
-  md = md.replace(/<h5>(.*?)<\/h5>/gi, '##### $1\n')
-  md = md.replace(/<h6>(.*?)<\/h6>/gi, '###### $1\n')
-  md = md.replace(/<strong>(.*?)<\/strong>/gi, '**$1**')
-  md = md.replace(/<b>(.*?)<\/b>/gi, '**$1**')
-  md = md.replace(/<em>(.*?)<\/em>/gi, '*$1*')
-  md = md.replace(/<i>(.*?)<\/i>/gi, '*$1*')
-  md = md.replace(/<code>(.*?)<\/code>/gi, '`$1`')
-  md = md.replace(/<blockquote>(.*?)<\/blockquote>/gi, '> $1\n')
-  md = md.replace(/<ul>(.*?)<\/ul>/gi, (_m: string, p1: string) => p1.replace(/<li>(.*?)<\/li>/gi, '- $1\n'))
-  md = md.replace(/<ol>(.*?)<\/ol>/gi, (_m: string, p1: string) => p1.replace(/<li>(.*?)<\/li>/gi, (_mm: string, li: string, index: number) => `${index + 1}. ${li}\n`))
-  md = md.replace(/<a[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi, '[$2]($1)')
-  md = md.replace(/<img[^>]*src=["']([^"']+)["'][^>]*alt=["']?([^"']*)["']?[^>]*\/>/gi, '![$2]($1)')
-  md = md.replace(/<p>(.*?)<\/p>/gi, '$1\n')
-  md = md.replace(/<br\s*\/?>/gi, '\n')
-  return md.trim()
-}
-
 interface MarkdownEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -77,11 +52,9 @@ function MarkdownEditor({ value, onChange }: MarkdownEditorProps) {
   return (
     <div className="border rounded-md overflow-hidden">
       <SimpleEditor
-        initialContent={markdownToHtml(value)}
-        onUpdate={(html) => {
-          // Convert HTML back to markdown using the helper function
-          const md = htmlToMarkdown(html);
-          onChange(md);
+        initialContent={value}
+        onUpdate={(markdown) => {
+          onChange(markdown);
         }}
       />
     </div>
@@ -930,17 +903,17 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
 
             {/* Edit Problem Section */}
             {section === 'edit' && (
-              <div className="flex-1 p-6 space-y-4 max-w-5xl overflow-y-auto">
+              <div className="flex-1 p-6 space-y-4 overflow-y-auto">
                 <div className="text-sm text-muted-foreground">Update the problem details.</div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="slug">Slug *</Label>
-                    <Input id="slug" value={problemForm.slug} onChange={(e) => setProblemForm({ ...problemForm, slug: e.target.value })} placeholder="problem-slug" disabled={!!problem?._id} />
+                    <Input id="slug" className="mt-1" value={problemForm.slug} onChange={(e) => setProblemForm({ ...problemForm, slug: e.target.value })} placeholder="problem-slug" disabled={!!problem?._id} />
                   </div>
                   <div>
                     <Label htmlFor="difficulty">Difficulty *</Label>
                     <Select value={problemForm.difficulty} onValueChange={(v: DifficultyLevel) => setProblemForm({ ...problemForm, difficulty: v })}>
-                      <SelectTrigger id="difficulty"><SelectValue /></SelectTrigger>
+                      <SelectTrigger id="difficulty" className="mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="beginner">Beginner</SelectItem>
                         <SelectItem value="intermediate">Intermediate</SelectItem>
@@ -951,16 +924,16 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                 </div>
                 <div>
                   <Label htmlFor="title">Title *</Label>
-                  <Input id="title" value={problemForm.title} onChange={(e) => setProblemForm({ ...problemForm, title: e.target.value })} placeholder="Problem title" />
+                  <Input id="title" className="mt-1" value={problemForm.title} onChange={(e) => setProblemForm({ ...problemForm, title: e.target.value })} placeholder="Problem title" />
                 </div>
                 <div>
                   <Label htmlFor="tagline">Tagline</Label>
-                  <Input id="tagline" value={problemForm.tagline} onChange={(e) => setProblemForm({ ...problemForm, tagline: e.target.value })} placeholder="Short tagline" />
+                  <Input id="tagline" className="mt-1" value={problemForm.tagline} onChange={(e) => setProblemForm({ ...problemForm, tagline: e.target.value })} placeholder="Short tagline" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="estimatedHours">Estimated Hours *</Label>
-                    <Input id="estimatedHours" type="number" min="1" value={problemForm.estimatedHours} onChange={(e) => setProblemForm({ ...problemForm, estimatedHours: parseInt(e.target.value) || 1 })} />
+                    <Input id="estimatedHours" className="mt-1" type="number" min="1" value={problemForm.estimatedHours} onChange={(e) => setProblemForm({ ...problemForm, estimatedHours: parseInt(e.target.value) || 1 })} />
                   </div>
                   <div className="flex items-center gap-2 pt-6">
                     <Switch id="isPublic" checked={problemForm.isPublic} onCheckedChange={(c) => setProblemForm({ ...problemForm, isPublic: c })} />
@@ -972,32 +945,32 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                   <div className="text-sm font-medium">Description</div>
                   <div>
                     <Label htmlFor="coreTheme">Core Theme</Label>
-                    <Input id="coreTheme" value={problemForm.coreTheme} onChange={(e) => setProblemForm({ ...problemForm, coreTheme: e.target.value })} placeholder="What is the core theme of this problem?" />
+                    <Input id="coreTheme" className="mt-1" value={problemForm.coreTheme} onChange={(e) => setProblemForm({ ...problemForm, coreTheme: e.target.value })} placeholder="What is the core theme of this problem?" />
                   </div>
                   <div>
                     <Label htmlFor="yourGoal">Your Goal</Label>
-                    <Input id="yourGoal" value={problemForm.yourGoal} onChange={(e) => setProblemForm({ ...problemForm, yourGoal: e.target.value })} placeholder="What is the goal?" />
+                    <Input id="yourGoal" className="mt-1" value={problemForm.yourGoal} onChange={(e) => setProblemForm({ ...problemForm, yourGoal: e.target.value })} placeholder="What is the goal?" />
                   </div>
                   <div>
                     <Label htmlFor="whoIsThisFor">Who is this for</Label>
-                    <Input id="whoIsThisFor" value={problemForm.whoIsThisFor} onChange={(e) => setProblemForm({ ...problemForm, whoIsThisFor: e.target.value })} placeholder="Who is the target audience?" />
+                    <Input id="whoIsThisFor" className="mt-1" value={problemForm.whoIsThisFor} onChange={(e) => setProblemForm({ ...problemForm, whoIsThisFor: e.target.value })} placeholder="Who is the target audience?" />
                   </div>
                   <div>
                     <Label htmlFor="whatSuccessLooksLike">What success looks like</Label>
-                    <Input id="whatSuccessLooksLike" value={problemForm.whatSuccessLooksLike} onChange={(e) => setProblemForm({ ...problemForm, whatSuccessLooksLike: e.target.value })} placeholder="How do you measure success?" />
+                    <Input id="whatSuccessLooksLike" className="mt-1" value={problemForm.whatSuccessLooksLike} onChange={(e) => setProblemForm({ ...problemForm, whatSuccessLooksLike: e.target.value })} placeholder="How do you measure success?" />
                   </div>
                 </div>
 
                 <div className="pt-4 border-t">
                   <Label htmlFor="skills">Skills</Label>
-                  <Input id="skills" value={problemForm.skills} onChange={(e) => setProblemForm({ ...problemForm, skills: e.target.value })} placeholder="e.g., React, Frontend, TypeScript (comma separated)" />
+                  <Input id="skills" className="mt-1" value={problemForm.skills} onChange={(e) => setProblemForm({ ...problemForm, skills: e.target.value })} placeholder="e.g., React, Frontend, TypeScript (comma separated)" />
                 </div>
               </div>
             )}
 
             {/* Edit Pod Section */}
             {section === 'editPod' && (
-              <div className="flex-1 p-6 space-y-4 max-w-5xl overflow-y-auto">
+              <div className="flex-1 p-6 space-y-4 overflow-y-auto">
                 <div className="text-sm text-muted-foreground">{editingPod ? 'Update the pod details.' : 'Create a new learning pod.'}</div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -1133,13 +1106,13 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                     <div className="h-full border-0">
                       <SimpleEditor
                         className="h-full"
-                        initialContent={markdownToHtml(stageForm.content.content_md)}
-                        onUpdate={(html) => {
+                        initialContent={stageForm.content.content_md}
+                        onUpdate={(markdown) => {
                           setStageForm((prev) => ({
                             ...prev,
                             content: {
                               ...prev.content,
-                              content_md: htmlToMarkdown(html),
+                              content_md: markdown,
                             },
                           }))
                         }}
@@ -1228,13 +1201,13 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                         <div className="border rounded-md">
                           <div className="simple-editor-wrapper compact">
                             <SimpleEditor
-                              initialContent={markdownToHtml(stageForm.content.content_md)}
-                              onUpdate={(html) => {
+                              initialContent={stageForm.content.content_md}
+                              onUpdate={(markdown) => {
                                 setStageForm((prev) => ({
                                   ...prev,
                                   content: {
                                     ...prev.content,
-                                    content_md: htmlToMarkdown(html),
+                                    content_md: markdown,
                                   },
                                 }))
                               }}
@@ -1257,25 +1230,13 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
 
                     <div>
                       <Label htmlFor="edit_stage_description" className="text-xs">Description</Label>
-                      <div className="border rounded-md mt-1">
-                        <div className="simple-editor-wrapper compact">
-                          <SimpleEditor
-                            initialContent={markdownToHtml(stageForm.description)}
-                            onUpdate={(html) => setStageForm({ ...stageForm, description: htmlToMarkdown(html) })}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="edit_stage_intro" className="text-xs">Introduction</Label>
-                      <div className="border rounded-md mt-1">
-                        <div className="simple-editor-wrapper compact">
-                          <SimpleEditor
-                            initialContent={markdownToHtml(stageForm.content.introduction)}
-                            onUpdate={(html) => setStageForm({ ...stageForm, content: { ...stageForm.content, introduction: htmlToMarkdown(html) } })}
-                          />
-                        </div>
-                      </div>
+                      <Input
+                        id="edit_stage_description"
+                        value={stageForm.description}
+                        onChange={(e) => setStageForm({ ...stageForm, description: e.target.value })}
+                        placeholder="Stage description"
+                        className="mt-1"
+                      />
                     </div>
                   </>
                 )}
@@ -1293,17 +1254,17 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
 
             {/* Add Problem Section */}
             {section === 'add' && (
-              <div className="flex-1 p-6 space-y-4 max-w-5xl overflow-y-auto">
+              <div className="flex-1 p-6 space-y-4 overflow-y-auto">
                 <div className="text-sm text-muted-foreground">Create a new learning problem.</div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="add_slug">Slug *</Label>
-                    <Input id="add_slug" value={problemForm.slug} onChange={(e) => setProblemForm({ ...problemForm, slug: e.target.value })} placeholder="problem-slug" />
+                    <Input id="add_slug" className="mt-1" value={problemForm.slug} onChange={(e) => setProblemForm({ ...problemForm, slug: e.target.value })} placeholder="problem-slug" />
                   </div>
                   <div>
                     <Label htmlFor="add_difficulty">Difficulty *</Label>
                     <Select value={problemForm.difficulty} onValueChange={(v: DifficultyLevel) => setProblemForm({ ...problemForm, difficulty: v })}>
-                      <SelectTrigger id="add_difficulty"><SelectValue /></SelectTrigger>
+                      <SelectTrigger id="add_difficulty" className="mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="beginner">Beginner</SelectItem>
                         <SelectItem value="intermediate">Intermediate</SelectItem>
@@ -1314,16 +1275,16 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                 </div>
                 <div>
                   <Label htmlFor="add_title">Title *</Label>
-                  <Input id="add_title" value={problemForm.title} onChange={(e) => setProblemForm({ ...problemForm, title: e.target.value })} placeholder="Problem title" />
+                  <Input id="add_title" className="mt-1" value={problemForm.title} onChange={(e) => setProblemForm({ ...problemForm, title: e.target.value })} placeholder="Problem title" />
                 </div>
                 <div>
                   <Label htmlFor="add_tagline">Tagline</Label>
-                  <Input id="add_tagline" value={problemForm.tagline} onChange={(e) => setProblemForm({ ...problemForm, tagline: e.target.value })} placeholder="Short tagline" />
+                  <Input id="add_tagline" className="mt-1" value={problemForm.tagline} onChange={(e) => setProblemForm({ ...problemForm, tagline: e.target.value })} placeholder="Short tagline" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="add_estimatedHours">Estimated Hours *</Label>
-                    <Input id="add_estimatedHours" type="number" min="1" value={problemForm.estimatedHours} onChange={(e) => setProblemForm({ ...problemForm, estimatedHours: parseInt(e.target.value) || 1 })} />
+                    <Input id="add_estimatedHours" className="mt-1" type="number" min="1" value={problemForm.estimatedHours} onChange={(e) => setProblemForm({ ...problemForm, estimatedHours: parseInt(e.target.value) || 1 })} />
                   </div>
                   <div className="flex items-center gap-2 pt-6">
                     <Switch id="add_isPublic" checked={problemForm.isPublic} onCheckedChange={(c) => setProblemForm({ ...problemForm, isPublic: c })} />
@@ -1335,25 +1296,25 @@ export default function ProblemManageDialog({ open, onOpenChange, problem }: Pro
                   <div className="text-sm font-medium">Description</div>
                   <div>
                     <Label htmlFor="add_coreTheme">Core Theme</Label>
-                    <Input id="add_coreTheme" value={problemForm.coreTheme} onChange={(e) => setProblemForm({ ...problemForm, coreTheme: e.target.value })} placeholder="What is the core theme of this problem?" />
+                    <Input id="add_coreTheme" className="mt-1" value={problemForm.coreTheme} onChange={(e) => setProblemForm({ ...problemForm, coreTheme: e.target.value })} placeholder="What is the core theme of this problem?" />
                   </div>
                   <div>
                     <Label htmlFor="add_yourGoal">Your Goal</Label>
-                    <Input id="add_yourGoal" value={problemForm.yourGoal} onChange={(e) => setProblemForm({ ...problemForm, yourGoal: e.target.value })} placeholder="What is the goal?" />
+                    <Input id="add_yourGoal" className="mt-1" value={problemForm.yourGoal} onChange={(e) => setProblemForm({ ...problemForm, yourGoal: e.target.value })} placeholder="What is the goal?" />
                   </div>
                   <div>
                     <Label htmlFor="add_whoIsThisFor">Who is this for</Label>
-                    <Input id="add_whoIsThisFor" value={problemForm.whoIsThisFor} onChange={(e) => setProblemForm({ ...problemForm, whoIsThisFor: e.target.value })} placeholder="Who is the target audience?" />
+                    <Input id="add_whoIsThisFor" className="mt-1" value={problemForm.whoIsThisFor} onChange={(e) => setProblemForm({ ...problemForm, whoIsThisFor: e.target.value })} placeholder="Who is the target audience?" />
                   </div>
                   <div>
                     <Label htmlFor="add_whatSuccessLooksLike">What success looks like</Label>
-                    <Input id="add_whatSuccessLooksLike" value={problemForm.whatSuccessLooksLike} onChange={(e) => setProblemForm({ ...problemForm, whatSuccessLooksLike: e.target.value })} placeholder="How do you measure success?" />
+                    <Input id="add_whatSuccessLooksLike" className="mt-1" value={problemForm.whatSuccessLooksLike} onChange={(e) => setProblemForm({ ...problemForm, whatSuccessLooksLike: e.target.value })} placeholder="How do you measure success?" />
                   </div>
                 </div>
 
                 <div className="pt-4 border-t">
                   <Label htmlFor="add_skills">Skills</Label>
-                  <Input id="add_skills" value={problemForm.skills} onChange={(e) => setProblemForm({ ...problemForm, skills: e.target.value })} placeholder="e.g., React, Frontend, TypeScript (comma separated)" />
+                  <Input id="add_skills" className="mt-1" value={problemForm.skills} onChange={(e) => setProblemForm({ ...problemForm, skills: e.target.value })} placeholder="e.g., React, Frontend, TypeScript (comma separated)" />
                 </div>
 
                 <div className="flex gap-2">

@@ -69,9 +69,6 @@ import { useIsBreakpoint } from "@/hooks/use-is-breakpoint"
 import { useWindowSize } from "@/hooks/use-window-size"
 import { useCursorVisibility } from "@/hooks/use-cursor-visibility"
 
-// --- Components ---
-import { ThemeToggle } from "@/components/tiptap-templates/simple/theme-toggle"
-
 // --- Lib ---
 import { cn, handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
 
@@ -208,14 +205,6 @@ const MainToolbarContent = ({
         <ImageAlignButton editor={editor} align="center" />
         <ImageAlignButton editor={editor} align="right" />
       </ToolbarGroup>
-
-      <Spacer />
-
-      {isMobile && <ToolbarSeparator />}
-
-      <ToolbarGroup>
-        <ThemeToggle />
-      </ToolbarGroup>
     </>
   )
 }
@@ -319,13 +308,14 @@ export function SimpleEditor({ initialContent, onUpdate, className }: SimpleEdit
       PasteMarkdown,
     ],
     content: initialContent ?? content,
+    contentType: 'markdown',
   })
 
   useEffect(() => {
     if (!editor) return
     const handler = () => {
       try {
-        onUpdate?.(editor.getHTML())
+        onUpdate?.(editor.getMarkdown())
       } catch { }
     }
     editor.on("update", handler)
